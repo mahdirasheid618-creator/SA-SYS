@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: sa-system
+    env: python
+    plan: free
+    region: oregon
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn --bind 0.0.0.0:$PORT app:app --workers 4"
+    autoDeploy: true
+    envVars:
+      - key: SECRET_KEY
+        sync: false

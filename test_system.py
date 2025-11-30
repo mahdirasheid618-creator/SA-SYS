@@ -1,10 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-اختبار سريع لنظام مسح الوجه
-Quick Test for Face Scanning System
-"""
-
 import os
 import sys
 from pathlib import Path
