@@ -1,0 +1,436 @@
+.certificate-page {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    min-height: 100vh;
+    padding: 40px 20px;
+    position: relative;
+    overflow: hidden;
+}
+.certificate-page::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+    animation: moveGradient 15s ease infinite;
+    pointer-events: none;
+}
+@keyframes moveGradient {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(50px, 50px); }
+}
+.butterfly {
+    position: fixed;
+    opacity: 0.15;
+    font-size: 4em;
+    animation: float 8s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+.butterfly:nth-child(1) { left: 5%; top: 10%; animation-delay: 0s; }
+.butterfly:nth-child(2) { right: 10%; top: 20%; animation-delay: 1s; }
+.butterfly:nth-child(3) { left: 15%; bottom: 20%; animation-delay: 2s; }
+.butterfly:nth-child(4) { right: 5%; bottom: 30%; animation-delay: 3s; }
+.butterfly:nth-child(5) { left: 50%; top: 5%; animation-delay: 4s; }
+@keyframes float {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-30px) rotate(8deg); }
+}
+.certificate-container {
+    max-width: 1200px;
+    width: 95%;
+    margin: 10px auto;
+    padding: 0 18px;
+    position: relative;
+    z-index: 10;
+}
+.certificate-header {
+    text-align: center;
+    margin-bottom: 40px;
+    animation: fadeInDown 0.8s ease;
+}
+.certificate-header h1 {
+    font-size: 3.5em;
+    margin: 0;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    letter-spacing: 2px;
+}
+.certificate-header p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.2em;
+    margin-top: 10px;
+    font-weight: 300;
+    letter-spacing: 3px;
+}
+.certificate-content {
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 28px;
+    padding: 80px 60px;
+    box-shadow: 0 30px 100px rgba(0, 0, 0, 0.25),
+                0 0 80px rgba(102, 126, 234, 0.18);
+    border: none;
+    position: relative;
+    backdrop-filter: blur(10px);
+    animation: slideUp 0.8s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+.certificate-content::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 30px;
+    right: auto;
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+    border-radius: 2px;
+}
+.certificate-image-section {
+    margin-bottom: 30px;
+    text-align: center;
+    width: 100%;
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.certificate-image {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(102, 126, 234, 0.25);
+    margin: 0;
+    display: block;
+    min-height: 360px;
+    max-height: 520px;
+    object-fit: cover;
+    position: relative;
+    z-index: 1;
+    transition: transform 0.35s ease;
+}
+.certificate-image-section:hover .certificate-image {
+    transform: scale(1.02);
+}
+.floating-emoji {
+    position: absolute;
+    font-size: 2.5em;
+    animation: floatEmoji 4s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 2;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+.floating-emoji:nth-child(1) { 
+    top: 10%; left: 8%; 
+    animation-delay: 0s;
+    font-size: 2.2em;
+}
+.floating-emoji:nth-child(2) { 
+    top: 20%; right: 10%; 
+    animation-delay: 0.8s;
+    font-size: 2.4em;
+}
+.floating-emoji:nth-child(3) { 
+    top: 50%; left: 5%; 
+    animation-delay: 1.6s;
+    font-size: 2.1em;
+}
+.floating-emoji:nth-child(4) { 
+    top: 35%; right: 8%; 
+    animation-delay: 2.4s;
+    font-size: 2.3em;
+}
+.floating-emoji:nth-child(5) { 
+    top: 60%; left: 12%; 
+    animation-delay: 3.2s;
+    font-size: 2.2em;
+}
+.floating-emoji:nth-child(6) { 
+    top: 15%; right: 5%; 
+    animation-delay: 1.2s;
+    font-size: 2em;
+}
+.floating-emoji:nth-child(7) { 
+    top: 5%; left: 40%;
+    animation-delay: 0.4s;
+    font-size: 1.8em;
+}
+.floating-emoji:nth-child(8) { 
+    top: 70%; right: 20%; 
+    animation-delay: 2.8s;
+    font-size: 2em;
+}
+.floating-emoji:nth-child(9) { 
+    top: 80%; left: 25%; 
+    animation-delay: 3.6s;
+    font-size: 1.9em;
+}
+.floating-emoji:nth-child(10) { 
+    top: 30%; left: 35%; 
+    animation-delay: 0.6s;
+    font-size: 2.1em;
+}
+.floating-emoji:nth-child(11) { 
+    top: 45%; right: 30%; 
+    animation-delay: 1.0s;
+    font-size: 1.7em;
+}
+.floating-emoji:nth-child(12) { 
+    top: 55%; right: 2%; 
+    animation-delay: 2.0s;
+    font-size: 1.9em;
+}
+@keyframes floatEmoji {
+    0% { 
+        transform: translateY(0px) translateX(0px) rotate(0deg) scale(1);
+        opacity: 0.8;
+    }
+    25% { 
+        transform: translateY(-18px) translateX(12px) rotate(12deg) scale(1.1);
+        opacity: 0.9;
+    }
+    50% { 
+        transform: translateY(-35px) translateX(-8px) rotate(-6deg) scale(0.95);
+        opacity: 1;
+    }
+    75% { 
+        transform: translateY(-18px) translateX(15px) rotate(10deg) scale(1.05);
+        opacity: 0.9;
+    }
+    100% { 
+        transform: translateY(0px) translateX(0px) rotate(0deg) scale(1);
+        opacity: 0.8;
+    }
+}
+.certificate-decoration {
+    text-align: center;
+    font-size: 2.2em;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 25px;
+}
+.certificate-title {
+    text-align: center;
+    font-size: 2.5em;
+    font-weight: 800;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 15px;
+    letter-spacing: 1px;
+}
+.certificate-subtitle {
+    text-align: center;
+    font-size: 1.15em;
+    color: #764ba2;
+    margin-bottom: 35px;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+.certificate-divider {
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #667eea 20%, #764ba2 50%, #f093fb 80%, transparent);
+    margin: 35px 0;
+    border-radius: 2px;
+}
+.certificate-section {
+    margin: 30px 0;
+    text-align: center;
+    padding: 15px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+.certificate-section:hover {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(240, 147, 251, 0.05));
+}
+.certificate-label {
+    font-size: 0.85em;
+    color: #667eea;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+.certificate-value {
+    font-size: 1.5em;
+    color: #2d3748;
+    font-weight: 800;
+    margin-bottom: 15px;
+    letter-spacing: 0.5px;
+}
+.certificate-description {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.08), rgba(240, 147, 251, 0.08));
+    padding: 30px;
+    border-radius: 15px;
+    margin: 30px 0;
+    border-left: 5px solid #667eea;
+    text-align: justify;
+    line-height: 2;
+    color: #4a5568;
+    font-size: 1.05em;
+}
+.dedication-section {
+    margin-top: 45px;
+    padding: 40px;
+    background: linear-gradient(135deg, #f7f7ff 0%, #f0eaff 50%, #ffe8f7 100%);
+    border-radius: 15px;
+    text-align: center;
+    border: 2px solid rgba(102, 126, 234, 0.15);
+}
+.dedication-title {
+    font-size: 1.6em;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+    margin-bottom: 30px;
+    font-style: italic;
+    letter-spacing: 1px;
+}
+.dedication-text {
+    color: #4a5568;
+    line-height: 2.2;
+    font-size: 1.1em;
+    margin: 20px 0;
+    transition: all 0.3s ease;
+}
+.dedication-text:hover {
+    color: #667eea;
+    transform: translateX(5px);
+}
+.dedication-text strong {
+    color: #764ba2;
+    font-weight: 800;
+    font-size: 1.1em;
+}
+.certificate-footer {
+    margin-top: 45px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
+    padding-top: 40px;
+    border-top: 3px solid #e2e8f0;
+}
+.signature-area {
+    text-align: center;
+    padding: 20px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+.signature-area:hover {
+    background: rgba(102, 126, 234, 0.05);
+}
+.signature-line {
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #667eea, #764ba2, transparent);
+    width: 180px;
+    margin: 0 auto 15px;
+    border-radius: 2px;
+}
+.signature-name {
+    font-size: 0.95em;
+    color: #667eea;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.signature-area p {
+    color: #4a5568;
+    margin-top: 8px;
+    font-size: 1.05em;
+    font-weight: 600;
+}
+.back-button {
+    display: inline-block;
+    margin-top: 30px;
+    padding: 14px 32px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 800;
+    font-family: 'Cairo', sans-serif;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    font-size: 1.05em;
+    letter-spacing: 1px;
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+.back-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #764ba2, #f093fb);
+}
+.back-button:active {
+    transform: translateY(-1px);
+}
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(40px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@media (max-width: 768px) {
+    .certificate-header h1 {
+        font-size: 2.5em;
+    }
+    .certificate-content {
+        padding: 40px 25px;
+    }
+    .certificate-title {
+        font-size: 1.8em;
+    }
+    .certificate-value {
+        font-size: 1.2em;
+    }
+    .certificate-footer {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+    .butterfly {
+        font-size: 2.5em;
+    }
+    .dedication-section {
+        padding: 25px;
+    }
+}
+@media print {
+    .floating-emoji, .back-button, .certificate-header, .butterfly {
+        display: none;
+    }
+    .certificate-page {
+        background: white;
+        padding: 0;
+    }
+    .certificate-content {
+        box-shadow: none;
+        margin: 0;
+        border-radius: 0;
+        padding: 40px;
+    }
+}

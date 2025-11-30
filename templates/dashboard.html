@@ -1,0 +1,215 @@
+{% extends "layout.html" %}
+{% block title %}لوحة التحكم - نظام إدارة الطلاب{% endblock %}
+{% block content %}
+<style>
+    .dashboard-hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 40px 20px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+    .dashboard-hero h1 {
+        font-size: 2.5em;
+        margin: 0 0 10px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+    .dashboard-hero p {
+        font-size: 1.1em;
+        opacity: 0.95;
+        margin: 0;
+    }
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+    .stat-card-modern {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        border-top: 4px solid #667eea;
+    }
+    .stat-card-modern:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.12);
+    }
+    .stat-card-modern.success { border-top-color: #48bb78; }
+    .stat-card-modern.danger { border-top-color: #f56565; }
+    .stat-card-modern.warning { border-top-color: #ed8936; }
+    .stat-icon {
+        font-size: 2.5em;
+        margin-bottom: 15px;
+        opacity: 0.8;
+    }
+    .stat-label {
+        font-size: 0.9em;
+        color: #718096;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+        font-weight: 600;
+    }
+    .stat-value {
+        font-size: 2.5em;
+        font-weight: 700;
+        color: #2d3748;
+    }
+    .actions-section {
+        margin-top: 40px;
+    }
+    .actions-section h2 {
+        font-size: 1.8em;
+        margin-bottom: 25px;
+        color: #2d3748;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+    }
+    .action-btn {
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 30px 20px;
+        text-align: center;
+        text-decoration: none;
+        color: #2d3748;
+        transition: all 0.3s ease;
+        font-weight: 600;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+    .action-btn i {
+        font-size: 2.5em;
+    }
+    .action-btn:hover {
+        border-color: #667eea;
+        background: #f7fafc;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.2);
+    }
+    .action-btn.primary i { color: #667eea; }
+    .action-btn.success i { color: #48bb78; }
+    .action-btn.secondary i { color: #4299e1; }
+    .action-btn.warning i { color: #ed8936; }
+    @media (max-width: 768px) {
+        .dashboard-hero h1 {
+            font-size: 1.8em;
+        }
+        .stat-value {
+            font-size: 1.8em;
+        }
+        .stats-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .actions-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+<div class="dashboard-hero">
+    <h1>
+        <i class="fas fa-tachometer-alt"></i> لوحة التحكم
+    </h1>
+</div>
+<div class="stats-container">
+    <div class="stat-card-modern">
+        <div class="stat-icon" style="color: #667eea;">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-label">إجمالي الطلاب</div>
+        <div class="stat-value" id="total-students">0</div>
+    </div>
+    <div class="stat-card-modern success">
+        <div class="stat-icon" style="color: #48bb78;">
+            <i class="fas fa-chalkboard-user"></i>
+        </div>
+        <div class="stat-label">إجمالي الأساتذة</div>
+        <div class="stat-value" id="total-teachers">0</div>
+    </div>
+    <div class="stat-card-modern danger">
+        <div class="stat-icon" style="color: #f56565;">
+            <i class="fas fa-user-tie"></i>
+        </div>
+        <div class="stat-label">إجمالي المشرفون</div>
+        <div class="stat-value" id="total-supervisors">0</div>
+    </div>
+    <div class="stat-card-modern warning">
+        <div class="stat-icon" style="color: #ed8936;">
+            <i class="fas fa-calendar-check"></i>
+        </div>
+        <div class="stat-label">إجمالي الحضور اليوم</div>
+        <div class="stat-value" id="attendance-today">0</div>
+    </div>
+</div>
+<div class="actions-section">
+    <h2>
+        <i class="fas fa-bolt" style="color: #667eea;"></i>
+        إجراءات سريعة
+    </h2>
+    <div class="actions-grid">
+        <a href="/add-student" onclick="RouteHandler.navigateTo('/add-student'); return false;" class="action-btn primary">
+            <i class="fas fa-user-plus"></i>
+            <span>إضافة طالب</span>
+        </a>
+        <a href="/attendance" onclick="RouteHandler.navigateTo('/attendance'); return false;" class="action-btn success">
+            <i class="fas fa-check-circle"></i>
+            <span>تسجيل الحضور</span>
+        </a>
+        <a href="/students" onclick="RouteHandler.navigateTo('/students'); return false;" class="action-btn secondary">
+            <i class="fas fa-list"></i>
+            <span>قائمة الطلاب</span>
+        </a>
+        <a href="/reports" onclick="RouteHandler.navigateTo('/reports'); return false;" class="action-btn warning">
+            <i class="fas fa-file-pdf"></i>
+            <span>التقارير</span>
+        </a>
+    </div>
+</div>
+<script>
+    function initStats(){
+        if (window.FirebaseAPI && window.FirebaseAPI.subscribeStudents) {
+            window.FirebaseAPI.subscribeStudents(function(students){
+                document.getElementById('total-students').textContent = students.length;
+            });
+            if (window.FirebaseAPI.subscribeUsersAndRoles) {
+                window.FirebaseAPI.subscribeUsersAndRoles(function(users){
+                    document.getElementById('total-supervisors').textContent = users.length;
+                });
+            }
+            if (window.FirebaseAPI.subscribeInstructors) {
+                window.FirebaseAPI.subscribeInstructors(function(instructors){
+                    const el = document.getElementById('total-teachers');
+                    if (el) el.textContent = instructors.length;
+                });
+            }
+        }
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.FirebaseReady && typeof window.FirebaseReady.then === 'function') {
+            window.FirebaseReady.then(()=> {
+                initStats();
+            }).catch((err)=> {
+                console.error('[DOMContentLoaded] FirebaseReady promise rejected', err);
+                initStats();
+            });
+        } else {
+            initStats();
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,173 @@
+{% extends "layout.html" %}
+{% block title %}المشرفين - نظام إدارة الطلاب{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>
+        <i class="fas fa-user-tie"></i> المشرفين
+    </h1>
+</div>
+<div class="card">
+    <div class="card-header">
+        <h2>قائمة المشرفين</h2>
+    </div>
+    <div class="card-body">
+        <div class="toolbar" style="justify-content:space-between; margin-bottom:16px;">
+            <div>
+                <a href="{{ url_for('add_supervisor') }}" class="btn btn-primary btn-small btn-add"><i class="fas fa-plus"></i> إضافة مشرف</a>
+                <button class="btn btn-secondary btn-small" onclick="refreshSupervisors()"><i class="fas fa-sync"></i> تحديث</button>
+            </div>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="supervisorSearch" class="form-control" placeholder="ابحث عن مشرف..." onkeyup="filterSupervisors()">
+            </div>
+        </div>
+        <div class="table-wrapper">
+            <table class="table" id="supervisorsTable">
+                <thead>
+                    <tr>
+                        <th>التسلسل</th>
+                        <th>الاسم الكامل</th>
+                        <th>اسم المستخدم</th>
+                        <th>البريد الجامعي</th>
+                        <th>رقم الهاتف</th>
+                        <th>الصلاحيات</th>
+                        <th>الرتبة العلمية</th>
+                        <th>تاريخ الإضافة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="supervisorsTableBody">
+                    <tr><td colspan="8" style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</td></tr>
+                </tbody>
+            </table>
+        </div>
+<div id="deleteModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; z-index:2000;">
+    <div style="background:#fff; max-width:520px; width:92%; border-radius:10px; padding:18px; box-shadow:0 12px 40px rgba(0,0,0,0.18);">
+        <div style="display:flex; gap:12px; align-items:center;">
+            <div style="width:60px; height:60px; border-radius:50%; background:linear-gradient(90deg,#f46b45, #eea849); display:flex; align-items:center; justify-content:center; color:#fff; font-size:24px;">
+                <i class="fas fa-trash-alt"></i>
+            </div>
+            <div style="flex:1;">
+                <h3 style="margin:0 0 6px 0;">تأكيد الحذف</h3>
+                <p id="deleteModalText" style="margin:0; color:#555;">هل أنت متأكد أنك تريد حذف هذا المشرف؟ هذه العملية لا يمكن التراجع عنها.</p>
+            </div>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px;">
+            <button class="btn btn-secondary" onclick="hideDeleteModal()">إلغاء</button>
+            <button id="confirmDeleteBtn" class="btn btn-danger">حذف نهائي</button>
+        </div>
+    </div>
+</div>
+<script>
+    let allSupervisors = [];
+    let currentSupPage = 1;
+    const supPerPage = 10;
+    function initSupervisors(){
+        if (window.FirebaseAPI && window.FirebaseAPI.fetchStudents) {
+            // load users via subscribe if available
+            if (typeof window.FirebaseAPI.subscribeUsersAndRoles === 'function') {
+                window.FirebaseAPI.subscribeUsersAndRoles(function(users){
+                    allSupervisors = users.map(u => ({ id: u.id, ...u }));
+                    renderSupervisors(1);
+                });
+            } else if (typeof window.FirebaseAPI.fetchUsers === 'function') {
+                // if fetchUsers exists (not implemented) use it; otherwise fallback
+                window.FirebaseAPI.fetchUsers().then(users=>{ allSupervisors = users; renderSupervisors(1); }).catch(()=>{});
+            } else {
+                // try to fetch via subscription fallback already handled above
+                console.log('initSupervisors: using subscribeUsersAndRoles if available');
+                if (typeof window.FirebaseAPI.subscribeUsersAndRoles === 'function') window.FirebaseAPI.subscribeUsersAndRoles(function(users){ allSupervisors = users.map(u=>({id:u.id,...u})); renderSupervisors(1); });
+            }
+        } else {
+            // fallback to server API if exists
+            fetch('/api/supervisors')
+                .then(r => r.json()).then(data=>{ if(data.success) { allSupervisors = data.users; renderSupervisors(1);} });
+        }
+    }
+    document.addEventListener('DOMContentLoaded', function(){
+        if (window.FirebaseReady && typeof window.FirebaseReady.then === 'function') {
+            window.FirebaseReady.then(()=> initSupervisors()).catch(()=> initSupervisors());
+        } else {
+            initSupervisors();
+        }
+    });
+    function refreshSupervisors(){ initSupervisors(); }
+    function renderSupervisors(page){
+        const start = (page-1)*supPerPage; const end = start + supPerPage;
+        const body = document.getElementById('supervisorsTableBody');
+        const pageData = allSupervisors.slice(start,end);
+                if (!pageData.length) { body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;">لا توجد بيانات</td></tr>'; return; }
+        body.innerHTML = pageData.map((u,i)=>{
+            const added = u.AddedDate && u.AddedDate.toDate ? new Date(u.AddedDate.toDate()).toLocaleString('ar-EG') : (u.AddedDate || '-');
+            const roles = u.Roles || u.roles || '-';
+            const sci = u.Scientific_title || u.scientific_title || '-';
+            return `
+                <tr>
+                    <td>${start+i+1}</td>
+                    <td>${u.FullName || u.full_name || '-'}</td>
+                            <td>${u.Username || u.username || '-'}</td>
+                            <td>${u.emailunivers || u.Email || u.email || '-'}</td>
+                            <td>${u.PhoneNumber || u.phone || '-'}</td>
+                    <td>${roles}</td>
+                    <td>${sci}</td>
+                    <td>${added}</td>
+                    <td>
+                        <div class="table-actions">
+                            <button class="btn btn-secondary btn-small" onclick="editSupervisor('${u.id}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-danger btn-small" onclick="deleteSupervisor('${u.id}')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+    function filterSupervisors(){
+        const v = document.getElementById('supervisorSearch').value.toLowerCase();
+        document.querySelectorAll('#supervisorsTableBody tr').forEach(tr=>{ tr.style.display = tr.textContent.toLowerCase().includes(v)?'':'none'; });
+    }
+    function editSupervisor(id){
+        // redirect to add_supervisor page with id to edit
+        // use underscore route which Flask defines as '/add_supervisor'
+        window.location.href = `/add_supervisor?id=${id}`;
+    }
+    let _pendingDeleteId = null;
+    function deleteSupervisor(id){
+        // prevent deleting the currently logged-in user
+        try{
+            const raw = localStorage.getItem('auth_user');
+            const auth = raw ? JSON.parse(raw) : null;
+            if(auth && auth.username){
+                // find the supervisor record in current list
+                const rec = allSupervisors.find(s => s.id === id);
+                const uname = (auth.username || '').toString().toLowerCase().trim();
+                const recNames = [rec && (rec.Username||rec.username||rec.FullName||rec.full_name||'' )];
+                if(rec && recNames.some(n=> (n||'').toString().toLowerCase().trim() === uname)){
+                    try{ if(window.showToast) { window.showToast('لا يمكنك حذف المستخدم المسجل حاليا', 'error'); } else { alert('لا يمكنك حذف المستخدم المسجل حاليا'); } }catch(e){}
+                    return;
+                }
+            }
+        }catch(e){ /* ignore parsing errors */ }
+        // show modal
+        _pendingDeleteId = id;
+        const text = document.getElementById('deleteModalText');
+        text.textContent = 'هل أنت متأكد أنك تريد حذف هذا المشرف نهائياً؟ سيتم إزالة الحساب وجميع صلاحياته.';
+        document.getElementById('deleteModal').style.display = 'flex';
+        const btn = document.getElementById('confirmDeleteBtn');
+        btn.onclick = function(){
+            btn.disabled = true;
+            if (window.FirebaseAPI && window.FirebaseAPI.deleteUser) {
+                window.FirebaseAPI.deleteUser(_pendingDeleteId).then(()=>{
+                    btn.disabled = false;
+                    hideDeleteModal();
+                    // refresh list
+                    initSupervisors();
+                }).catch(err=>{ btn.disabled = false; hideDeleteModal(); alert('فشل الحذف'); console.error(err); });
+            } else {
+                // fallback: attempt server
+                fetch(`/api/delete-supervisor/${_pendingDeleteId}`, { method:'DELETE' }).then(r=>r.json()).then(j=>{ hideDeleteModal(); initSupervisors(); }).catch(err=>{ hideDeleteModal(); alert('فشل الحذف'); console.error(err); });
+            }
+        };
+    }
+    function hideDeleteModal(){ document.getElementById('deleteModal').style.display='none'; _pendingDeleteId=null; }
+</script>
+{% endblock %}

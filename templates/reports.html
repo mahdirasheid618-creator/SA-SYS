@@ -1,0 +1,152 @@
+{% extends "layout.html" %}
+{% block title %}التقارير - نظام إدارة الطلاب{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/reports.css') }}">
+<div class="reports-page">
+    <div class="reports-header">
+        <h1><i class="fas fa-chart-line"></i> لوحة التقارير والإحصائيات</h1>
+        <p>تقارير شاملة لإحصائيات النظام والبيانات التحليلية</p>
+    </div>
+    <div class="report-buttons">
+        <button class="report-btn active" data-report="overview">
+            <i class="fas fa-briefcase"></i> تقرير شامل للطلاب
+        </button>
+        <button class="report-btn" data-report="instructors">
+            <i class="fas fa-chalkboard-user"></i> تقرير شامل للأساتذة
+        </button>
+        <button class="report-btn" data-report="supervisors">
+            <i class="fas fa-user-tie"></i> تقرير شامل للمشرفين
+        </button>
+        <button class="report-btn" data-report="attendance">
+            <i class="fas fa-calendar-check"></i> تقرير شامل بالحضور
+        </button>
+        <button class="report-btn" data-report="absence">
+            <i class="fas fa-calendar-times"></i> تقرير شامل بالغياب
+        </button>
+    </div>
+    <div class="reports-container">
+        <div class="report-section active" id="overview">
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="card-content">
+                        <p class="card-label">إجمالي الطلاب</p>
+                        <h3 class="card-value" id="total-students">0</h3>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <div class="card-content">
+                        <p class="card-label">إجمالي الأقسام</p>
+                        <h3 class="card-value" id="total-departments">0</h3>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-chalkboard-user"></i>
+                    </div>
+                    <div class="card-content">
+                        <p class="card-label">إجمالي الأساتذة</p>
+                        <h3 class="card-value" id="total-instructors">0</h3>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="card-content">
+                        <p class="card-label">إجمالي المشرفين</p>
+                        <h3 class="card-value" id="total-supervisors">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3><i class="fas fa-chart-pie"></i> توزيع الطلاب حسب الأقسام</h3>
+                    <canvas id="studentsByDepartmentChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3><i class="fas fa-chart-bar"></i> إجمالي الطلاب بالنظام</h3>
+                    <canvas id="totalStudentsChart"></canvas>
+                </div>
+            </div>
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3><i class="fas fa-chart-bar"></i> توزيع الأساتذة</h3>
+                    <canvas id="instructorsChart"></canvas>
+                </div>
+            </div>
+            <div class="visits-section">
+                <h2><i class="fas fa-globe"></i> إحصائيات زيارات الموقع</h2>
+                <div class="visits-cards">
+                    <div class="visit-card">
+                        <i class="fas fa-calendar-day"></i>
+                        <div>
+                            <p>زيارات اليوم</p>
+                            <h3 id="visits-today">0</h3>
+                        </div>
+                    </div>
+                    <div class="visit-card">
+                        <i class="fas fa-calendar"></i>
+                        <div>
+                            <p>إجمالي الزيارات</p>
+                            <h3 id="visits-total">0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3><i class="fas fa-chart-line"></i> الزيارات خلال اليوم</h3>
+                        <canvas id="hourlyVisitsChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3><i class="fas fa-chart-area"></i> إجمالي الزيارات الشهرية</h3>
+                        <canvas id="monthlyVisitsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="attendance-section">
+                <h2><i class="fas fa-calendar-check"></i> إحصائيات الحضور</h2>
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3><i class="fas fa-chart-line"></i> تسجيل الحضور اليومي</h3>
+                        <canvas id="dailyAttendanceChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3><i class="fas fa-chart-bar"></i> إجمالي الحضور شهري</h3>
+                        <canvas id="monthlyAttendanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        
+    </div>
+</div>
+<script>
+    (function(){
+        const root = document.documentElement;
+        const stored = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        let theme = stored || (prefersDark ? 'dark' : 'light');
+        root.setAttribute('data-theme', theme);
+        const icon = document.getElementById('themeToggleIcon');
+        function updateIcon(t){ if(!icon) return; icon.className = t === 'dark' ? 'fas fa-moon' : 'fas fa-sun'; }
+        updateIcon(theme);
+        const btn = document.getElementById('themeToggle');
+        if (btn) btn.addEventListener('click', ()=>{
+            theme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            root.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            updateIcon(theme);
+        });
+    })();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="{{ url_for('static', filename='js/xlsx.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/reports.js') }}"></script>
+{% endblock %}

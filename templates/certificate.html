@@ -1,0 +1,105 @@
+{% extends "layout.html" %}
+{% block title %}شهادة المشروع - نظام إدارة الطلاب{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/certificate.css') }}">
+<div class="certificate-page">
+<div class="certificate-page">
+    <div class="butterfly">🦋</div>
+    <div class="butterfly">🌸</div>
+    <div class="butterfly">🦋</div>
+    <div class="butterfly">🌺</div>
+    <div class="butterfly">🦋</div>
+    <div class="certificate-header">
+            <h1>شهادة المشروع</h1>
+        </div>
+        <div class="certificate-content">
+            <div class="certificate-image-section">
+                <img src="{{ url_for('static', filename='images/BImg.jpg') }}" alt="Project Image" class="certificate-image">
+                <div class="floating-emoji">🦋</div>
+                <div class="floating-emoji">🌸</div>
+                <div class="floating-emoji">❤️</div>
+                <div class="floating-emoji">🦋</div>
+                <div class="floating-emoji">🌸</div>
+                <div class="floating-emoji">❤️</div>
+                <div class="floating-emoji">🦋</div>
+                <div class="floating-emoji">🦋</div>
+                <div class="floating-emoji">❤️</div>
+                
+            </div>
+            <div class="certificate-divider"></div>
+            <div class="certificate-section">
+                <div class="certificate-label">👩‍🎓 اسم الطالبة</div>
+                <div class="certificate-value">زهراء جبار فرج</div>
+            </div>
+            <div class="certificate-section">
+                <div class="certificate-label">👨‍🏫 المشرف الأكاديمي</div>
+                <div class="certificate-value">م.د حسنين حازم عزيز</div>
+            </div>
+            <div class="certificate-section">
+                <div class="certificate-label">🎯 عنوان المشروع</div>
+                <div class="certificate-value">AI-Powered Smart Attendance System Using Facial Recognition</div>
+            </div>
+            <div class="certificate-divider"></div>
+            <div class="certificate-description">
+                <strong>📖 وصف المشروع:</strong>
+                <br><br>
+                يطور هذا المشروع نظام حضور مبتكراً يعتمد على تقنيات الذكاء الاصطناعي والرؤية الحاسوبية لتعرف الوجوه وتسجيل الحضور تلقائياً. يقلل من الاحتيال ويوفر الوقت والجهد للمعلمين والإدارة.
+            </div>
+            <div class="dedication-section">
+                <div class="dedication-title">🎁 الإهداء 🎁</div>
+                <div class="dedication-text">
+                    إلى من لا يضاهيهما أحد في الكون، إلى من أمرنا الله ببرّهما، إلى من بذلا الكثير، وقدّما ما لا يمكن أن يردّ، إليكما تلك الكلمات أمي وأبي الغاليان، أهدي لكما هذا البحث؛ فقد كنتما خير داعم لي طوال مسيرتي الدراسية. إليكما أهدي هذا الجهد، وهذا البحث، ففد كنتما على الدّوام ملهميًّ، فعلى خطاكما أسير، وبعلمكما أقتدي، أشكركما الشكر الجزيل على ما قدّمتماه لي طوال فترة دراستي، وإنجازي لهذا البحث.
+                </div>
+            </div>
+            <div class="certificate-footer">
+                <div class="signature-area">
+                    <div class="signature-line"></div>
+                    <div class="signature-name">المشرف</div>
+                    <p>م.د حسنين حازم عزيز</p>
+                </div>
+                <div class="signature-area">
+                    <div class="signature-line"></div>
+                    <div class="signature-name">بيد الطالبة</div>
+                    <p>زهراء جبار فرج</p>
+                </div>
+            </div>
+        </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function printCertificate() {
+        const bodyClone = document.body.cloneNode(true);
+        bodyClone.querySelectorAll('.sidebar, #sidebar, .sidebar-toggle, .back-button, .sidebar-menu, .sidebar-logo').forEach(el => el.remove());
+        bodyClone.querySelectorAll('script').forEach(s => s.remove());
+        bodyClone.querySelectorAll('[data-no-print], .no-print').forEach(el => el.remove());
+        const printHtml = `<!doctype html>
+        <html lang="ar" dir="rtl">
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width,initial-scale=1">
+                <title>طباعة الشهادة</title>
+                <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+                <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+                <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+                <link rel="stylesheet" href="{{ url_for('static', filename='css/certificate.css') }}">
+                <link rel="stylesheet" href="{{ url_for('static', filename='css/certificate-print.css') }}">>
+            </head>
+            <body>
+                ${bodyClone.innerHTML}
+            </body>
+        </html>`;
+        const win = window.open('', '_blank', 'toolbar=0,scrollbars=1,location=0,statusbar=0,menubar=0,resizable=1,width=900,height=1100');
+        if (!win) return alert('تعذر فتح نافذة الطباعة. يرجى السماح بالنوافذ المنبثقة لهذا الموقع.');
+        win.document.open();
+        win.document.write(printHtml);
+        win.document.close();
+        win.addEventListener('load', () => {
+                setTimeout(() => {
+                        win.focus();
+                        win.print();
+                }, 400);
+        });
+}
+</script>
+{% endblock %}

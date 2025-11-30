@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>غير متصل - نظام SA System</title>
+  <link rel="stylesheet" href="/static/css/base.css">
+  <style>
+    body{font-family:'Cairo',sans-serif;background:#f7f9fb;color:#12202b;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+    .offline-card{max-width:720px;padding:28px;border-radius:12px;background:#fff;box-shadow:0 12px 40px rgba(2,6,23,0.06);text-align:center}
+    .offline-card h1{margin:0 0 8px 0;font-size:22px}
+    .offline-card p{margin:0 0 16px 0;color:#53606a}
+    .offline-card img{width:96px;height:96px;object-fit:contain;margin-bottom:12px}
+    .offline-actions a{display:inline-block;padding:10px 14px;border-radius:10px;background:#2c8fce;color:#fff;text-decoration:none;font-weight:700}
+  </style>
+</head>
+<body>
+  <div class="offline-card">
+    <img src="/static/images/tech-256x256.png" alt="SA System">
+    <h1>أنت غير متصل</h1>
+    <p>يبدو أنك غير متصل بالإنترنت. يمكنك متابعة استخدام التطبيق المثبت أو إعادة المحاولة لاحقاً.</p>
+    <div class="offline-actions">
+      <a href="#" onclick="location.reload();return false;">إعادة المحاولة</a>
+    </div>
+  </div>
+</body>
+</html>

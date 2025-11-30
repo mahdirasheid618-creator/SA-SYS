@@ -1,0 +1,24 @@
+
+#tabsWrapper { margin: 8px 0 12px 0; }
+#tabsWrapper .tabs-row{ display:flex; gap:8px; align-items:center; flex-wrap:nowrap; overflow-x:auto; padding:6px 4px; }
+#tabsWrapper .tab-btn{ min-width:40px; padding:8px 10px; border-radius:8px; border:1px solid #e0e0e0; background:#fff; cursor:pointer; white-space:nowrap; }
+#tabsWrapper .tab-btn.active{ background:var(--secondary-color); color:#fff; border-color:var(--secondary-color); }
+#tabsWrapper .tab-range-btn{ min-width:44px; padding:8px 10px; border-radius:8px; border:1px solid #d0d0d0; background:#f6f7fb; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+@media (max-width: 800px){
+    #tabsWrapper .tab-btn{ min-width:34px; padding:6px 8px; }
+    #tabsWrapper .tab-range-btn{ min-width:36px; padding:6px 8px; }
+}
+#deleteModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+#deleteModal .modal-card { background: white; border-radius: 12px; padding: 30px; max-width: 400px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.3); animation: slideUp 0.3s ease-out; }
+#deleteModal .modal-icon { width: 70px; height: 70px; margin: 0 auto 15px; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 35px; }
+#deleteModal .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 25px; }
+#deleteModal .btn-cancel { padding: 10px 15px; border: 1px solid #ecf0f1; background: #f8f9fa; color: #2c3e50; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; }
+#deleteModal .btn-confirm { padding: 10px 15px; background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s; }
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+#deleteModal.show { display: flex !important; align-items: center; justify-content: center; }
+.summary-card { margin-top: 20px; background: linear-gradient(135deg, rgba(52,152,219,0.08) 0%, rgba(46,204,113,0.08) 100%); border-left: 4px solid var(--secondary-color); padding: 12px; }
+.summary-card .icon { font-size: 20px; color: var(--secondary-color); }
+.summary-card .value { font-size: 20px; font-weight: 700; color: var(--secondary-color); margin-right: 8px; }

@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@vladmandic/human": "^3.3.6",
+    "firebase": "^12.5.0"
+  }
+}

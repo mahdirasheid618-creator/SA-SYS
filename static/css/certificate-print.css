@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap');
+@page { size: A4 portrait; margin: 20mm; }
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg, #f7fbff 0%, #eef9f6 100%);
+  font-family: 'Cairo', sans-serif;
+  color: #111827;
+}
+.certificate-content {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 18mm !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0 auto !important;
+  border: none !important;
+}
+.certificate-image {
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  border-radius: 6px !important;
+}
+.certificate-header h1 { font-size: 28px !important; }
+.certificate-title { font-size: 24px !important; }
+.certificate-value { font-size: 18px !important; }
+.certificate-description { font-size: 14px !important; line-height: 1.6 !important; }
+.butterfly, .floating-emoji, .certificate-decoration { display: block !important; opacity: 0.9 !important; }
+.back-button { display: none !important; }
+.certificate-page::before { display: block !important; }
+.certificate-content, .certificate-image-section, .dedication-section { page-break-inside: avoid; }
+.certificate-footer { display: flex; justify-content: space-between; gap: 20px; }
+.signature-area { padding: 0; }
+.signature-line { width: 220px; height: 2px; margin-bottom: 6px; }
+i.fas { display: none; }
+* { -webkit-print-color-adjust: exact; print-color-adjust: exact; }

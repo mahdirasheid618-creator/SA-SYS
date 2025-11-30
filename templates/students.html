@@ -1,0 +1,100 @@
+{% extends "layout.html" %}
+{% block title %}تسجيل الطلاب - نظام إدارة الطلاب{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>
+        <i class="fas fa-users"></i> تسجيل الطلاب
+    </h1>
+</div>
+<div class="toolbar">
+    <div class="toolbar-section">
+        <a href="{{ url_for('add_student') }}" class="btn btn-primary btn-small btn-add">
+            <i class="fas fa-plus"></i> إضافة
+        </a>
+    </div>
+    <div class="toolbar-section">
+        <button class="btn btn-warning btn-small" onclick="exportToExcel()">
+            <i class="fas fa-file-excel"></i> تصدير Excel
+        </button>
+        <button class="btn btn-warning btn-small" onclick="exportToPDF()">
+            <i class="fas fa-file-pdf"></i> تصدير PDF
+        </button>
+        <button class="btn btn-secondary btn-small" onclick="printStudents()">
+            <i class="fas fa-print"></i> طباعة
+        </button>
+    </div>
+</div>
+<div class="card" style="padding: 16px; margin-bottom: 20px;">
+    <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="ابحث عن طالب..." onkeyup="filterTable()">
+        <button class="btn btn-secondary btn-small" id="refreshTableBtn" title="تحديث الجدول" onclick="refreshStudentsTable()">
+            <i class="fas fa-sync-alt"></i> تحديث
+        </button>
+    </div>
+</div>
+<div id="tabsWrapper">
+</div>
+<div class="card" style="padding: 0; overflow: hidden;">
+    <div class="table-wrapper">
+        <table class="table" id="studentsTable">
+            <thead>
+                <tr>
+                    <th>التسلسل</th>
+                    <th>الاسم</th>
+                    <th>القسم</th>
+                    <th>المرحلة</th>
+                    <th>الهاتف</th>
+                    <th>العمر</th>
+                    <th>تاريخ الإضافة</th>
+                    <th>الوجه</th>
+                    <th>الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody id="studentsTableBody">
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 40px;">
+                        <i class="fas fa-spinner fa-spin"></i> جاري التحميل...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="pagination" id="paginationContainer">
+</div>
+<div class="card" style="margin-top: 20px; background: linear-gradient(135deg, rgba(52,152,219,0.08) 0%, rgba(46,204,113,0.08) 100%); border-left: 4px solid var(--secondary-color);">
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <i class="fas fa-info-circle" style="font-size: 20px; color: var(--secondary-color);"></i>
+        <div>
+            <strong style="font-size: 16px; color: var(--dark-color);">إجمالي عدد الطلاب:</strong>
+            <span id="totalStudents" style="font-size: 20px; font-weight: 700; color: var(--secondary-color); margin-right: 8px;">0</span>
+        </div>
+    </div>
+</div>
+<div id="deleteModal">
+    <div class="modal-card">
+        <div style="text-align: center; margin-bottom: 25px;">
+            <div class="modal-icon">
+                <i class="fas fa-trash-alt" style="color: white;"></i>
+            </div>
+            <h2 style="margin: 0 0 10px 0; color: #2c3e50; font-size: 22px;">تأكيد الحذف</h2>
+            <p id="deleteModalMessage" style="margin: 10px 0 0 0; color: #7f8c8d; font-size: 14px;"></p>
+        </div>
+        <div class="modal-actions">
+            <button id="cancelDeleteBtn" class="btn-cancel" onclick="hideDeleteModal()">
+                <i class="fas fa-times" style="margin-left: 5px;"></i> إلغاء
+            </button>
+            <button id="confirmDeleteBtn" class="btn-confirm">
+                <i class="fas fa-trash-alt" style="margin-left: 5px;"></i> حذف
+            </button>
+        </div>
+    </div>
+</div>
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/student.css') }}">
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/student.js') }}"></script>
+{% endblock %}
+{% endblock %}

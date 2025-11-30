@@ -1,0 +1,671 @@
+{% extends "layout.html" %}
+{% block title %}تسجيل الحضور - نظام إدارة الطلاب{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>
+        <i class="fas fa-clipboard-list"></i> تسجيل الحضور
+    </h1>
+</div>
+<div class="toolbar">
+    <div class="toolbar-section">
+        <button class="btn btn-primary btn-small" onclick="addAttendance()">
+            <i class="fas fa-plus"></i> إضافة
+        </button>
+        <button class="btn btn-secondary btn-small" onclick="editAttendance()">
+            <i class="fas fa-edit"></i> تعديل
+        </button>
+        <button class="btn btn-danger btn-small" onclick="deleteAttendance()">
+            <i class="fas fa-trash"></i> حذف
+        </button>
+    </div>
+    <div class="toolbar-section">
+        <button class="btn btn-warning btn-small" onclick="exportToExcel()">
+            <i class="fas fa-file-excel"></i> تصدير Excel
+        </button>
+        <button class="btn btn-warning btn-small" onclick="exportToPDF()">
+            <i class="fas fa-file-pdf"></i> تصدير PDF
+        </button>
+        <button class="btn btn-secondary btn-small" onclick="window.print()">
+            <i class="fas fa-print"></i> طباعة
+        </button>
+    </div>
+</div>
+<div class="card">
+    <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="ابحث عن طالب أو محاضرة..." 
+               onkeyup="filterTable()">
+    </div>
+</div>
+<div class="tabs">
+    <button class="tab-button active" onclick="switchTab(event, 'today')">
+        <i class="fas fa-calendar-day"></i> اليوم
+    </button>
+    <button class="tab-button" onclick="switchTab(event, 'yesterday')">
+        <i class="fas fa-calendar"></i> الأمس
+    </button>
+    <button class="tab-button" onclick="switchTab(event, 'week')">
+        <i class="fas fa-calendar-week"></i> هذا الأسبوع
+    </button>
+    <button class="tab-button" onclick="switchTab(event, 'all')">
+        <i class="fas fa-history"></i> الكل
+    </button>
+</div>
+<div class="table-wrapper">
+    <table class="table" id="attendanceTable">
+        <thead>
+            <tr>
+                <th>التسلسل</th>
+                <th>الاسم الثلاثي</th>
+                <th>المرحلة</th>
+                <th>تاريخ التسجيل</th>
+                <th>وقت التسجيل</th>
+                <th>اسم المحاضرة</th>
+                <th>اسم المحاضر</th>
+                <th>مدة المحاضرة</th>
+                <th>الإجراءات</th>
+            </tr>
+        </thead>
+        <tbody id="attendanceTableBody">
+            <tr>
+                <td colspan="9" style="text-align: center; padding: 40px;">
+                    <i class="fas fa-spinner fa-spin"></i> جاري التحميل...
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+<div style="margin-top: 20px; padding: 15px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <strong>إجمالي الحضور لليوم:</strong> <span id="totalAttendance">0</span>
+</div>
+<script>
+    let allAttendanceData = [];
+    let currentTab = 'today';
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAttendance();
+    });
+    function loadAttendance() {
+        fetch('/api/attendance')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    allAttendanceData = data.attendance || [];
+                    filterByTab(currentTab);
+                } else {
+                    console.log('جاري تحميل البيانات من Firebase...');
+                    // محاولة تحميل من Firebase
+                    if (window.FirebaseAPI && typeof window.FirebaseAPI.getAttendanceRecords === 'function') {
+                        window.FirebaseAPI.getAttendanceRecords().then(records => {
+                            allAttendanceData = records || [];
+                            filterByTab(currentTab);
+                        }).catch(err => {
+                            console.error('خطأ في تحميل الحضور:', err);
+                            showError('خطأ في تحميل بيانات الحضور');
+                        });
+                    } else {
+                        showError('خطأ في تحميل بيانات الحضور');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('خطأ:', error);
+                // محاولة بديلة من Firebase
+                if (window.FirebaseAPI && typeof window.FirebaseAPI.getAttendanceRecords === 'function') {
+                    window.FirebaseAPI.getAttendanceRecords().then(records => {
+                        allAttendanceData = records || [];
+                        filterByTab(currentTab);
+                    }).catch(err => {
+                        showError('خطأ في الاتصال بالخادم');
+                    });
+                } else {
+                    showError('خطأ في الاتصال بالخادم');
+                }
+            });
+    }
+    function switchTab(e, tab) {
+        // تحديث الزر النشط
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        e.target.closest('.tab-button').classList.add('active');
+        currentTab = tab;
+        filterByTab(tab);
+    }
+    function filterByTab(tab) {
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        let filteredData = [];
+        switch(tab) {
+            case 'today':
+                filteredData = allAttendanceData.filter(record => {
+                    const recordDate = new Date(record.date);
+                    return recordDate.toDateString() === today.toDateString();
+                });
+                break;
+            case 'yesterday':
+                filteredData = allAttendanceData.filter(record => {
+                    const recordDate = new Date(record.date);
+                    return recordDate.toDateString() === yesterday.toDateString();
+                });
+                break;
+            case 'week':
+                const weekAgo = new Date(today);
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                filteredData = allAttendanceData.filter(record => {
+                    const recordDate = new Date(record.date);
+                    return recordDate >= weekAgo && recordDate <= today;
+                });
+                break;
+            case 'all':
+                filteredData = allAttendanceData;
+                break;
+        }
+        displayAttendanceTable(filteredData);
+        updateTotalAttendance(filteredData.length);
+    }
+    function displayAttendanceTable(data) {
+        const tbody = document.getElementById('attendanceTableBody');
+        if (data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px;">لا توجد بيانات حضور</td></tr>';
+            return;
+        }
+        tbody.innerHTML = data.map((record, index) => `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${record.student_name || '-'}</td>
+                <td>${record.stage || '-'}</td>
+                <td>${record.date || '-'}</td>
+                <td>${record.time || '-'}</td>
+                <td>${record.lecture_name || '-'}</td>
+                <td>${record.lecturer_name || '-'}</td>
+                <td>${record.duration || '-'}</td>
+                <td>
+                    <div class="table-actions">
+                        <button class="btn btn-secondary btn-small" onclick="editRecord('${record.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger btn-small" onclick="deleteRecord('${record.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `).join('');
+    }
+    function filterTable() {
+        const searchValue = document.getElementById('searchInput').value.toLowerCase();
+        const rows = document.querySelectorAll('#attendanceTableBody tr');
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchValue) ? '' : 'none';
+        });
+    }
+    function updateTotalAttendance(count) {
+        document.getElementById('totalAttendance').textContent = count;
+    }
+    function addAttendance() {
+        // فتح modal لإضافة طالب
+        showAddStudentModal();
+    }
+    function editAttendance() {
+        alert('يرجى اختيار سجل لتعديله');
+    }
+    function deleteAttendance() {
+        alert('يرجى اختيار سجل لحذفه');
+    }
+    function editRecord(id) {
+        alert('تعديل السجل: ' + id);
+    }
+    function deleteRecord(id) {
+        if (confirm('هل تريد حذف هذا السجل؟')) {
+            alert('تم حذف السجل');
+        }
+    }
+    function exportToExcel() {
+        const table = document.getElementById('attendanceTable');
+        const ws = XLSX.utils.table_to_sheet(table);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'الحضور');
+        XLSX.writeFile(wb, 'الحضور.xlsx');
+    }
+    function exportToPDF() {
+        const {jsPDF} = window.jspdf;
+        const doc = new jsPDF({orientation: 'l', unit: 'mm', format: 'a4'});
+        doc.setFontSize(16);
+        doc.text('سجل الحضور', 14, 15);
+        const table = document.getElementById('attendanceTable');
+        const rows = [];
+        table.querySelectorAll('tbody tr').forEach(tr => {
+            const cells = [];
+            tr.querySelectorAll('td').forEach(td => {
+                cells.push(td.textContent);
+            });
+            rows.push(cells);
+        });
+        doc.autoTable({
+            head: [['التسلسل', 'الاسم', 'المرحلة', 'التاريخ', 'الوقت', 'المحاضرة', 'المحاضر', 'المدة']],
+            body: rows.slice(0, -1),
+            startY: 20
+        });
+        doc.save('الحضور.pdf');
+    }
+    function showError(message) {
+        const tbody = document.getElementById('attendanceTableBody');
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 40px; color: red;">${message}</td></tr>`;
+    }
+</script>
+
+<!-- Modal لإضافة طالب بمطابقة الوجه -->
+<div id="addStudentModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 10000; overflow: auto;">
+    <div style="background: white; margin: 20px auto; padding: 30px; border-radius: 12px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #ecf0f1; padding-bottom: 15px;">
+            <h2 style="margin: 0; color: var(--primary-color);">
+                <i class="fas fa-camera"></i> تسجيل الحضور بمطابقة الوجه
+            </h2>
+            <button onclick="closeAddStudentModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #7f8c8d;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- الكاميرا والمعالجة -->
+        <div id="cameraSection" style="text-align: center;">
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                <i class="fas fa-spinner fa-spin" style="color: var(--primary-color); font-size: 24px; margin-bottom: 10px;"></i>
+                <p style="color: var(--primary-color); font-weight: 600; margin: 10px 0 0 0;">
+                    يرجى النظر للكاميرا للالتقاط
+                </p>
+                <p style="color: #7f8c8d; font-size: 13px; margin: 5px 0 0 0;">
+                    جاري تهيئة نظام الكشف عن الوجه...
+                </p>
+            </div>
+
+            <div style="position: relative; border-radius: 12px; overflow: hidden; background: #000; margin-bottom: 15px; border: 3px solid var(--primary-color);">
+                <video id="attendanceVideo" autoplay playsinline style="width: 100%; height: auto; display: block; aspect-ratio: 16/9;"></video>
+                <canvas id="attendanceCanvas" style="display: none;"></canvas>
+                
+                <!-- مؤشر الكشف عن الوجه -->
+                <div id="faceDetectionIndicator" style="position: absolute; top: 10px; right: 10px; background: rgba(231, 76, 60, 0.9); color: white; padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none;">
+                    <i class="fas fa-exclamation-circle"></i> لم يتم الكشف عن وجه
+                </div>
+                <div id="faceDetectedIndicator" style="position: absolute; top: 10px; right: 10px; background: rgba(46, 204, 113, 0.9); color: white; padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none;">
+                    <i class="fas fa-check-circle"></i> تم الكشف عن وجه
+                </div>
+            </div>
+
+            <!-- رسالة المعالجة -->
+            <div id="processingMessage" style="padding: 15px; background: rgba(52, 152, 219, 0.1); border-radius: 8px; margin-bottom: 15px; color: var(--primary-color); font-weight: 600; display: none;">
+                <i class="fas fa-spinner fa-spin"></i> جاري التحقق من الوجه ومطابقته...
+            </div>
+
+            <!-- رسالة النجاح -->
+            <div id="matchSuccessMessage" style="padding: 15px; background: rgba(46, 204, 113, 0.15); border-left: 5px solid #2ecc71; border-radius: 8px; margin-bottom: 15px; color: #2ecc71; font-weight: bold; display: none;">
+                <i class="fas fa-check-circle"></i> <span id="matchStudentName"></span>
+            </div>
+
+            <!-- رسالة الفشل -->
+            <div id="matchErrorMessage" style="padding: 15px; background: rgba(231, 76, 60, 0.15); border-left: 5px solid #e74c3c; border-radius: 8px; margin-bottom: 15px; color: #e74c3c; font-weight: bold; display: none;">
+                <i class="fas fa-times-circle"></i> <span id="matchErrorText"></span>
+            </div>
+
+            <!-- الأزرار -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeAddStudentModal()" style="padding: 12px; border-radius: 8px;">
+                    <i class="fas fa-times"></i> إغلاق
+                </button>
+                <button type="button" class="btn btn-primary" id="retryMatchBtn" onclick="retryFaceMatch()" style="padding: 12px; border-radius: 8px; display: none;">
+                    <i class="fas fa-redo"></i> محاولة أخرى
+                </button>
+            </div>
+
+            <!-- ملاحظات -->
+            <div style="margin-top: 20px; padding: 15px; background: var(--gray-light); border-radius: 8px; font-size: 12px; color: var(--gray-dark);">
+                <p style="margin: 0 0 10px 0;">
+                    <i class="fas fa-info-circle"></i> <strong>ملاحظات مهمة:</strong>
+                </p>
+                <ul style="margin: 10px 0 0 20px; padding: 0;">
+                    <li>تأكد من الإضاءة الجيدة</li>
+                    <li>ضع وجهك مباشرة أمام الكاميرا</li>
+                    <li>انتظر حتى يتم الكشف عن الوجه (خط أخضر حول الوجه)</li>
+                    <li>سيتم مطابقة الوجه مع قاعدة البيانات تلقائياً</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/face-human.js') }}"></script>
+<script src="{{ url_for('static', filename='js/face-scan.js') }}"></script>
+<script src="{{ url_for('static', filename='js/fast-face-detector.js') }}"></script>
+<script src="{{ url_for('static', filename='js/fast-face-matching.js') }}"></script>
+<script src="{{ url_for('static', filename='js/python-face-api.js') }}"></script>
+<script>
+    let attendanceVideo = null;
+    let attendanceCanvas = null;
+    let currentMatchingFaceEmbedding = null;
+    let faceMatchingActive = false;
+
+    function showAddStudentModal() {
+        document.getElementById('addStudentModal').style.display = 'block';
+        attendanceVideo = document.getElementById('attendanceVideo');
+        attendanceCanvas = document.getElementById('attendanceCanvas');
+        
+        // إخفاء الرسائل
+        resetModalMessages();
+        
+        // بدء الكاميرا ومطابقة الوجه
+        initializeAttendanceFaceMatching();
+    }
+
+    function closeAddStudentModal() {
+        document.getElementById('addStudentModal').style.display = 'none';
+        if (window.FastFaceMatchingModule) {
+            FastFaceMatchingModule.stopCamera();
+            FastFaceMatchingModule.stopDetection();
+        }
+        resetModalMessages();
+    }
+
+    function resetModalMessages() {
+        document.getElementById('processingMessage').style.display = 'none';
+        document.getElementById('matchSuccessMessage').style.display = 'none';
+        document.getElementById('matchErrorMessage').style.display = 'none';
+        document.getElementById('faceDetectionIndicator').style.display = 'none';
+        document.getElementById('faceDetectedIndicator').style.display = 'none';
+        document.getElementById('retryMatchBtn').style.display = 'none';
+    }
+
+    async function initializeAttendanceFaceMatching() {
+        try {
+            console.log('تهيئة نظام مطابقة الوجه السريع...');
+            faceMatchingActive = true;
+            
+            // تهيئة النموذج السريع
+            if (window.FastFaceMatchingModule) {
+                await FastFaceMatchingModule.init(attendanceVideo, attendanceCanvas);
+                await FastFaceMatchingModule.startCamera();
+                console.log('✓ الكاميرا والنموذج جاهز');
+                
+                // بدء الكشف السريع
+                startLiveAttendanceFastDetection();
+            }
+            
+        } catch (err) {
+            console.error('خطأ في تهيئة النظام:', err);
+            faceMatchingActive = false;
+            showMatchError('خطأ في تشغيل الكاميرا: ' + err.message);
+            document.getElementById('retryMatchBtn').style.display = 'block';
+        }
+    }
+
+    let lastMatchAttempt = 0;
+    const MATCH_COOLDOWN = 1500; // حاول مطابقة كل 1.5 ثانية
+
+    function startLiveAttendanceFastDetection() {
+        if (!window.FastFaceMatchingModule || !faceMatchingActive) return;
+
+        // بدء الكشف السريع
+        FastFaceMatchingModule.startFastDetection(async (detectionResult) => {
+            if (!faceMatchingActive) return;
+            
+            if (!detectionResult.success) {
+                // لا يوجد وجه
+                document.getElementById('faceDetectionIndicator').style.display = 'block';
+                document.getElementById('faceDetectedIndicator').style.display = 'none';
+                return;
+            }
+
+            // تم الكشف عن وجه
+            document.getElementById('faceDetectionIndicator').style.display = 'none';
+            document.getElementById('faceDetectedIndicator').style.display = 'block';
+
+            // محاولة المطابقة كل 1.5 ثانية فقط
+            const now = Date.now();
+            if (now - lastMatchAttempt < MATCH_COOLDOWN) {
+                return;
+            }
+
+            lastMatchAttempt = now;
+            document.getElementById('processingMessage').style.display = 'block';
+
+            try {
+                // استخدام الصورة من الـ canvas مباشرة بدلاً من البيانات المستخرجة
+                const imageBase64 = detectionResult.imageData || attendanceCanvas.toDataURL('image/jpeg', 0.9);
+
+                // إذا كان لدينا embedding سريع من الـ detector فنجرب المطابقة محلياً أولاً
+                if (detectionResult.embedding && Array.isArray(detectionResult.embedding)) {
+                    try {
+                        const students = await (window.FirebaseAPI && typeof window.FirebaseAPI.getAllStudents === 'function' ? window.FirebaseAPI.getAllStudents() : []);
+                        if (students && students.length) {
+                            let best = null;
+                            let bestSim = -1;
+                            for (const s of students) {
+                                const stored = s.face_embedding || s.embedding || s.faceEmbedding || s.embedding_vector;
+                                if (!stored || !Array.isArray(stored)) continue;
+                                const sim = calculateEmbeddingSimilarity(detectionResult.embedding, stored);
+                                if (sim > bestSim) {
+                                    bestSim = sim;
+                                    best = s;
+                                }
+                            }
+
+                            // عتبة مطابقة محلية (تجريبية)
+                            const LOCAL_SIM_THRESHOLD = 0.70;
+                            if (best && bestSim >= LOCAL_SIM_THRESHOLD) {
+                                console.log('مطابقة محلية ناجحة:', best.full_name, bestSim);
+                                const clientMatch = {
+                                    success: true,
+                                    id: best.id,
+                                    full_name: best.full_name || best.fullName || best.name || 'غير معلوم',
+                                    stage: best.stage || best.department || '',
+                                    distance: 1 - bestSim,
+                                    similarity: bestSim
+                                };
+                                faceMatchingActive = false;
+                                FastFaceMatchingModule.stopDetection();
+                                await addStudentToAttendance(clientMatch);
+                                document.getElementById('processingMessage').style.display = 'none';
+                                return;
+                            }
+                        }
+                    } catch (localErr) {
+                        console.warn('خطأ في المطابقة المحلية، نتابع بالمطابقة على الخادم:', localErr);
+                    }
+                }
+
+                // لا يوجد تطابق محلي ⇒ نرسل الصورة إلى خادم Python للمطابقة
+                console.log('جاري المطابقة على الخادم بطول صورة:', imageBase64.length);
+                const matchResult = await matchFaceWithPython(imageBase64);
+
+                if (matchResult.success) {
+                    faceMatchingActive = false;
+                    FastFaceMatchingModule.stopDetection();
+                    await addStudentToAttendance(matchResult);
+                    document.getElementById('processingMessage').style.display = 'none';
+                } else {
+                    document.getElementById('processingMessage').style.display = 'none';
+                    console.log('محاولة المطابقة مستمرة...', matchResult.message);
+                    // المحاولة مستمرة بدون إظهار خطأ في كل محاولة
+                }
+            } catch (err) {
+                console.error('خطأ في المطابقة:', err);
+                document.getElementById('processingMessage').style.display = 'none';
+            }
+        });
+    }
+
+    async function matchFaceWithPython(imageData) {
+        try {
+            console.log('جاري البحث عن طالب مطابق باستخدام Python...');
+            
+            if (!window.FirebaseAPI || typeof window.FirebaseAPI.getAllStudents !== 'function') {
+                throw new Error('Firebase API غير متاح');
+            }
+
+            // جلب جميع الطلاب
+            const students = await window.FirebaseAPI.getAllStudents();
+            
+            if (!students || students.length === 0) {
+                return {
+                    success: false,
+                    message: 'لا توجد بيانات طلاب في النظام'
+                };
+            }
+
+            // استخدام Python للمطابقة
+            const pythonResult = await PythonFaceAPI.matchAttendance(imageData, students);
+
+            if (pythonResult.success) {
+                console.log(`✓ تطابق وجد: ${pythonResult.student_name}`);
+                return {
+                    success: true,
+                    id: pythonResult.student_id,
+                    full_name: pythonResult.student_name,
+                    stage: pythonResult.stage,
+                    distance: pythonResult.distance,
+                    similarity: pythonResult.similarity
+                };
+            } else {
+                return {
+                    success: false,
+                    message: pythonResult.message || 'لم يتم العثور على طالب مطابق'
+                };
+            }
+
+        } catch (err) {
+            console.error('خطأ في المطابقة:', err);
+            return {
+                success: false,
+                message: 'خطأ في عملية المطابقة: ' + err.message
+            };
+        }
+    }
+
+    function calculateEmbeddingSimilarity(emb1, emb2) {
+        // تحويل إلى arrays إذا لم تكن كذلك
+        const arr1 = Array.isArray(emb1) ? emb1 : Object.values(emb1);
+        const arr2 = Array.isArray(emb2) ? emb2 : Object.values(emb2);
+
+        if (arr1.length !== arr2.length) {
+            return 0;
+        }
+
+        // حساب معامل التشابه (Cosine Similarity)
+        let dotProduct = 0;
+        let magnitude1 = 0;
+        let magnitude2 = 0;
+
+        for (let i = 0; i < arr1.length; i++) {
+            dotProduct += arr1[i] * arr2[i];
+            magnitude1 += arr1[i] * arr1[i];
+            magnitude2 += arr2[i] * arr2[i];
+        }
+
+        magnitude1 = Math.sqrt(magnitude1);
+        magnitude2 = Math.sqrt(magnitude2);
+
+        if (magnitude1 === 0 || magnitude2 === 0) {
+            return 0;
+        }
+
+        return dotProduct / (magnitude1 * magnitude2);
+    }
+
+    async function addStudentToAttendance(matchResult) {
+        try {
+            // إخفاء الكاميرا
+            document.getElementById('cameraSection').style.display = 'none';
+
+            // الحصول على التاريخ والوقت الحالي
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const registrationDate = `${day}/${month}/${year}`;
+            
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const registrationTime = `${hours}:${minutes}:${seconds}`;
+
+            // إنشاء سجل الحضور
+            const attendanceRecord = {
+                student_name: matchResult.full_name,
+                student_id: matchResult.id,
+                stage: matchResult.stage,
+                date: registrationDate,
+                time: registrationTime,
+                lecture_name: '-',
+                lecturer_name: '-',
+                duration: '-',
+                timestamp: now.toISOString()
+            };
+
+            console.log('إضافة الحضور:', attendanceRecord);
+
+            // حفظ في Firebase
+            let savedToFirebase = false;
+            if (window.FirebaseAPI && typeof window.FirebaseAPI.addAttendance === 'function') {
+                try {
+                    const attendanceId = await window.FirebaseAPI.addAttendance(attendanceRecord);
+                    console.log('✓ تم حفظ الحضور في Firebase:', attendanceId);
+                    savedToFirebase = true;
+                    attendanceRecord.id = attendanceId;
+                } catch (firebaseErr) {
+                    console.error('خطأ في حفظ Firebase:', firebaseErr);
+                }
+            }
+
+            // إضافة السجل إلى الجدول محلياً
+            allAttendanceData.unshift(attendanceRecord);
+            
+            // إعادة تحميل الجدول
+            filterByTab(currentTab);
+            updateTotalAttendance(allAttendanceData.length);
+
+            // إظهار رسالة النجاح
+            document.getElementById('matchStudentName').textContent = `✓ تم تسجيل ${matchResult.full_name} بنجاح (مسافة: ${matchResult.distance?.toFixed(3) || 'N/A'})`;
+            document.getElementById('matchSuccessMessage').style.display = 'block';
+
+            console.log('✓ تم إضافة الطالب إلى الحضور:', attendanceRecord);
+
+            // إغلاق الـ modal بعد 2 ثانية
+            setTimeout(() => {
+                closeAddStudentModal();
+                document.getElementById('cameraSection').style.display = 'block';
+            }, 2000);
+
+        } catch (err) {
+            console.error('خطأ في إضافة الطالب:', err);
+            showMatchError('خطأ في تسجيل الحضور: ' + err.message);
+            document.getElementById('retryMatchBtn').style.display = 'block';
+        }
+    }
+
+    function showMatchError(message) {
+        document.getElementById('matchErrorText').textContent = message;
+        document.getElementById('matchErrorMessage').style.display = 'block';
+        document.getElementById('matchSuccessMessage').style.display = 'none';
+        document.getElementById('retryMatchBtn').style.display = 'block';
+    }
+
+    function retryFaceMatch() {
+        resetModalMessages();
+        document.getElementById('cameraSection').style.display = 'block';
+        lastMatchAttempt = 0; // إعادة تعيين العداد
+        
+        if (window.FastFaceMatchingModule) {
+            FastFaceMatchingModule.stopDetection();
+            startLiveAttendanceFastDetection();
+        }
+    }
+
+    // إغلاق الـ modal عند الضغط خارجه
+    document.addEventListener('click', function(event) {
+        const modal = document.getElementById('addStudentModal');
+        if (event.target === modal) {
+            closeAddStudentModal();
+        }
+    });
+</script>
+{% endblock %}

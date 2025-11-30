@@ -1,0 +1,404 @@
+{% extends "layout.html" %}
+{% block title %}الإعدادات - نظام إدارة الطلاب{% endblock %}
+{% block content %}
+<style>
+    :root{
+        --bg: #f7fafc;
+        --card-bg: #ffffff;
+        --text: #1f2937;
+        --muted: #718096;
+        --accent: #667eea;
+        --accent-2: #764ba2;
+        --input-border: #e2e8f0;
+        --shadow: 0 4px 15px rgba(0,0,0,0.08);
+        --header-gradient: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+    }
+    [data-theme="dark"]{
+        --bg: #071025;
+        --card-bg: #071423;
+        --text: #e6eef8;
+        --muted: #9fb3d6;
+        --accent: #8ab4ff;
+        --accent-2: #6a8cff;
+        --input-border: rgba(255,255,255,0.06);
+        --shadow: none;
+        --header-gradient: linear-gradient(135deg, rgba(138,180,255,0.18) 0%, rgba(106,140,255,0.12) 100%);
+    }
+    body, .settings-header, .settings-card, .settings-btn, input, label, h1, h3, p {
+        font-family: 'Cairo', sans-serif;
+    }
+    body{ background: var(--bg); color: var(--text); }
+    .settings-header {
+        background: var(--header-gradient);
+        color: white;
+        padding: 50px 20px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    .settings-header h1 {
+        font-size: 2.8em;
+        margin: 0;
+        font-weight: 700;
+    }
+    .settings-header p {
+        font-size: 1.1em;
+        opacity: 0.95;
+        margin: 10px 0 0;
+    }
+    .tabs-container {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 30px;
+        border-bottom: 2px solid var(--input-border);
+        overflow-x: auto;
+    }
+    .tab-btn {
+        padding: 15px 25px;
+        background: none;
+        border: none;
+        font-family: 'Cairo', sans-serif;
+        font-size: 1.1em;
+        font-weight: 600;
+        color: var(--muted);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-bottom: 3px solid transparent;
+        white-space: nowrap;
+    }
+    .tab-btn:hover { color: var(--accent); font-family: 'Cairo', sans-serif; }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .settings-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: var(--shadow);
+        margin-bottom: 20px;
+    }
+    .settings-card h3 {
+        font-size: 1.5em;
+        margin: 0 0 20px;
+        color: var(--text);
+        font-weight: 700;
+    }
+    .settings-group { margin-bottom: 25px; }
+    .settings-group label {
+        display: block;
+        font-size: 1em;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 10px;
+    }
+    .settings-group input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid var(--input-border);
+        border-radius: 8px;
+        font-size: 1em;
+        transition: all 0.3s ease;
+        background: transparent;
+        color: var(--text);
+    }
+    .settings-group input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.06);
+    }
+    .button-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 25px; }
+    .settings-btn {
+        padding: 12px 20px;
+        border: 2px solid var(--input-border);
+        border-radius: 8px;
+        background: transparent;
+        font-size: 1em;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        color: var(--text);
+    }
+    .settings-btn:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .settings-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .certificate-btn {
+        background: var(--header-gradient);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 1.1em;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        justify-content: center;
+    }
+    .certificate-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(102, 126, 234, 0.12); }
+    .info-text { color: var(--muted); font-size: 0.95em; margin-top: 8px; }
+</style>
+<div class="settings-header">
+    <h1 data-i18n="settings_title">
+        <i class="fas fa-cog"></i> الإعدادات
+    </h1>
+    <p data-i18n="settings_subtitle">إدارة إعدادات النظام والمظهر</p>
+</div>
+<div class="tabs-container">
+    <button class="tab-btn active" onclick="switchTab(event, 'general')">
+        <i class="fas fa-sliders-h"></i> <span data-i18n="tab_general">الإعدادات العامة</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab(event, 'appearance')">
+        <i class="fas fa-palette"></i> <span data-i18n="tab_appearance">المظهر</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab(event, 'backup')">
+        <i class="fas fa-database"></i> <span>النسخ الاحتياطي</span>
+    </button>
+</div>
+<div id="general" class="tab-content active">
+    <div class="settings-card">
+        <h3 data-i18n="org_info">معلومات المؤسسة</h3>
+        <div class="settings-group">
+            <label data-i18n="institution_name">اسم المؤسسة</label>
+            <input type="text" id="institution-name" placeholder="أدخل اسم المؤسسة" >
+        </div>
+        <div class="settings-group">
+            <label data-i18n="director_name">اسم المدير الأعلى</label>
+            <input type="text" id="director-name" placeholder="أدخل اسم المدير الأعلى">
+        </div>
+    </div>
+    <!-- Backup/Restore card moved here -->
+    <div class="settings-card">
+        <h3><i class="fas fa-database"></i> النسخ الاحتياطي والاستعادة</h3>
+        <div class="settings-group">
+            <label>إنشاء نسخة احتياطية من البيانات</label>
+            <button class="settings-btn" onclick="doBackup()">
+                <i class="fas fa-download"></i> تنزيل نسخة احتياطية (Firebase)
+            </button>
+            <span id="backup-path-label" class="info-text"></span>
+        </div>
+        <div class="settings-group">
+            <label>استعادة نسخة احتياطية</label>
+            <input type="file" id="restore-file-picker" accept=".json" style="display:inline-block" />
+            <button class="settings-btn" onclick="doRestore()">
+                <i class="fas fa-upload"></i> استعادة نسخة احتياطية (Firebase)
+            </button>
+            <span id="restore-file-label" class="info-text"></span>
+        </div>
+        <p class="info-text">سيتم حفظ نسخة من بيانات الفايربيس والجداول. عند الاستعادة سيتم استبدال البيانات الحالية بالنسخة المختارة.</p>
+    </div>
+</div>
+<div id="appearance" class="tab-content">
+    <!-- Backup Tab Content: must be sibling to other tab-content divs -->
+    <div class="settings-card">
+        <h3 data-i18n="appearance">المظهر</h3>
+        <div class="button-group">
+            <button class="settings-btn active" id="theme-light" onclick="changeTheme(event, 'light')">
+                <i class="fas fa-sun"></i> <span data-i18n="theme_light">الوضع النهاري</span>
+            </button>
+            <button class="settings-btn" id="theme-dark" onclick="changeTheme(event, 'dark')">
+                <i class="fas fa-moon"></i> <span data-i18n="theme_dark">الوضع الليلي</span>
+            </button>
+        </div>
+        <p class="info-text" data-i18n="appearance_info">اختر المظهر المفضل لك للعمل بشكل مريح</p>
+    </div>
+</div>
+<script>
+        // Backup/Restore logic with Firebase
+        document.addEventListener('DOMContentLoaded', function() {
+            const restoreInput = document.getElementById('restore-file-picker');
+            if (restoreInput) {
+                restoreInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    document.getElementById('restore-file-label').textContent = file ? file.name : '';
+                });
+            }
+        });
+
+        async function doBackup() {
+            const db = window.firebaseDb;
+            if (!db) {
+                alert('Firebase غير متوفر في الصفحة.');
+                return;
+            }
+            try {
+                // استيراد دوال Firestore إذا لم تكن متوفرة
+                let collectionFn = window.collection, getDocsFn = window.getDocs;
+                if (!collectionFn || !getDocsFn) {
+                    const firestoreModule = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+                    collectionFn = firestoreModule.collection;
+                    getDocsFn = firestoreModule.getDocs;
+                }
+                const collections = ['UsersAndRoles', 'StudentTB', 'Instructors', 'Supervisors', 'Attendance'];
+                let backup = {};
+                for (const col of collections) {
+                    const colRef = collectionFn(db, col);
+                    const snap = await getDocsFn(colRef);
+                    backup[col] = [];
+                    snap.forEach(doc => {
+                        backup[col].push({ id: doc.id, ...doc.data() });
+                    });
+                }
+                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'firebase-backup-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+                document.getElementById('backup-path-label').textContent = 'تم تنزيل النسخة الاحتياطية.';
+            } catch (e) {
+                alert('حدث خطأ أثناء النسخ الاحتياطي: ' + (e.message || e));
+            }
+        }
+
+        async function doRestore() {
+            const db = window.firebaseDb;
+            if (!db) {
+                alert('Firebase غير متوفر في الصفحة.');
+                return;
+            }
+            // استيراد دوال Firestore إذا لم تكن متوفرة
+            let collectionFn = window.collection, getDocsFn = window.getDocs, docFn = window.doc, setDocFn = window.setDoc, writeBatchFn = window.writeBatch;
+            if (!collectionFn || !getDocsFn || !docFn || !setDocFn || !writeBatchFn) {
+                const firestoreModule = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js');
+                collectionFn = firestoreModule.collection;
+                getDocsFn = firestoreModule.getDocs;
+                docFn = firestoreModule.doc;
+                setDocFn = firestoreModule.setDoc;
+                writeBatchFn = firestoreModule.writeBatch;
+            }
+            const input = document.getElementById('restore-file-picker');
+            if (!input.files.length) {
+                alert('يرجى اختيار ملف النسخة الاحتياطية أولاً.');
+                return;
+            }
+            const file = input.files[0];
+            try {
+                const text = await file.text();
+                const data = JSON.parse(text);
+                // حذف البيانات القديمة (تحذير: هذا يمسح كل شيء في الجداول المحددة)
+                const collections = Object.keys(data);
+                for (const col of collections) {
+                    const colRef = collectionFn(db, col);
+                    const snap = await getDocsFn(colRef);
+                    const batch = writeBatchFn(db);
+                    snap.forEach(docSnap => batch.delete(docSnap.ref));
+                    await batch.commit();
+                }
+                // استعادة البيانات
+                for (const col of collections) {
+                    for (const row of data[col]) {
+                        const ref = docFn(db, col, row.id);
+                        const { id, ...rest } = row;
+                        await setDocFn(ref, rest);
+                    }
+                }
+                document.getElementById('restore-file-label').textContent = 'تمت الاستعادة بنجاح.';
+                alert('تمت استعادة النسخة الاحتياطية بنجاح!');
+            } catch (e) {
+                alert('حدث خطأ أثناء الاستعادة: ' + (e.message || e));
+            }
+        }
+    function switchTab(event, tabName) {
+        event && event.preventDefault();
+        // Hide all tabs
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        // Remove active class from all buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        // Show selected tab (support backup tab)
+        var tab = document.getElementById(tabName);
+        if (tab) tab.classList.add('active');
+        // mark the clicked tab button active when event present
+        if (event) event.target.closest('.tab-btn').classList.add('active');
+    }
+    // language switching removed — no-op placeholders kept for compatibility
+    function applyLanguage(lang){ console.log('Language switching removed.'); }
+    function changeLanguage(event, lang){ event && event.preventDefault(); console.log('Language switching removed.'); }
+    function applyTheme(theme){
+        document.querySelectorAll('[id^="theme-"]').forEach(btn => btn.classList.remove('active'));
+        const btn = document.getElementById('theme-' + theme);
+        if (btn) btn.classList.add('active');
+        // Prefer centralized theme manager if available
+        if (window.setTheme && typeof window.setTheme === 'function'){
+            window.setTheme(theme);
+        } else {
+            localStorage.setItem('theme', theme);
+            document.documentElement.setAttribute('data-theme', theme);
+        }
+        console.log('Theme applied:', theme);
+    }
+    function changeTheme(event, theme) {
+        event && event.preventDefault();
+        applyTheme(theme);
+    }
+    // Load saved preferences on page load (language removed)
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedTheme = localStorage.getItem('theme') || (window.getTheme ? window.getTheme() : 'light');
+        applyTheme(savedTheme);
+        // Load saved general settings (institution + director)
+        try {
+            const inst = localStorage.getItem('sa_institution_name') || '';
+            const dir = localStorage.getItem('sa_director_name') || '';
+            const instEl = document.getElementById('institution-name');
+            const dirEl = document.getElementById('director-name');
+            if (instEl) instEl.value = inst;
+            if (dirEl) dirEl.value = dir;
+        } catch(e) { console.warn('Failed to load saved general settings', e); }
+        try {
+            const instEl = document.getElementById('institution-name');
+            const dirEl = document.getElementById('director-name');
+            if (instEl) instEl.addEventListener('input', debounceSaveGeneral);
+            if (dirEl) dirEl.addEventListener('input', debounceSaveGeneral);
+        } catch(e) {}
+    });
+
+    let _saveTimer = null;
+    function debounceSaveGeneral() {
+        if (_saveTimer) clearTimeout(_saveTimer);
+        _saveTimer = setTimeout(() => {
+            saveGeneralSettings();
+        }, 600);
+    }
+
+    function saveGeneralSettings(){
+        try{
+            const instEl = document.getElementById('institution-name');
+            const dirEl = document.getElementById('director-name');
+            const inst = instEl ? instEl.value.trim() : '';
+            const dir = dirEl ? dirEl.value.trim() : '';
+            try { localStorage.setItem('sa_institution_name', inst); } catch(e) { console.warn('Failed to save institution', e); }
+            try { localStorage.setItem('sa_director_name', dir); } catch(e) { console.warn('Failed to save director', e); }
+            showSavedIndicator();
+            console.log('Saved general settings:', { institution: inst, director: dir });
+        }catch(e){ console.error('saveGeneralSettings error', e); }
+    }
+
+    function showSavedIndicator(){
+        let el = document.getElementById('savedIndicator');
+        if(!el){
+            el = document.createElement('div');
+            el.id = 'savedIndicator';
+            el.style.cssText = 'position:fixed; right:18px; bottom:18px; background:rgba(0,0,0,0.7); color:#fff; padding:10px 14px; border-radius:8px; font-size:13px; z-index:9999;';
+            el.textContent = 'تم الحفظ';
+            document.body.appendChild(el);
+        }
+        el.style.opacity = '1';
+        clearTimeout(el._hideTimer);
+        el._hideTimer = setTimeout(()=>{ el.style.opacity = '0'; }, 1400);
+    }
+    const _certBtn = document.querySelector('.certificate-btn');
+    if (_certBtn) {
+        _certBtn.addEventListener('click', function() {
+            RouteHandler.navigateTo('/certificate');
+        });
+    }
+</script>
+{% endblock %}

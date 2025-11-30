@@ -1,0 +1,577 @@
+{% extends "layout.html" %}
+{% block title %}إضافة / تعديل طالب - نظام إدارة الطلاب{% endblock %}
+{% block content %}
+<div class="page-header">
+    <a href="{{ url_for('students') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> رجوع
+    </a>
+    <h1>
+        <i class="fas fa-user-plus"></i> <span id="pageTitle">إضافة طالب جديد</span>
+    </h1>
+</div>
+<div class="card">
+    <div class="card-body">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+            <div style="order: 2;">
+                <h3 style="margin-bottom: 20px; color: var(--primary-color);">
+                    <i class="fas fa-pencil-alt"></i> بيانات الطالب
+                </h3>
+                <form id="studentForm" onsubmit="handleFormSubmit(event)">
+                    <div class="form-group">
+                        <label for="fullName">الاسم الثلاثي *</label>
+                        <input type="text" id="fullName" name="full_name" class="form-control" 
+                               placeholder="أدخل الاسم الثلاثي" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="age">العمر (سنة)</label>
+                        <input type="number" id="age" name="age" class="form-control" 
+                               placeholder="أدخل العمر" min="1" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label for="department">القسم *</label>
+                        <select id="department" name="department" class="form-control" required>
+                            <option value="">اختر القسم</option>
+                            <option value="البرمجيات">البرمجيات</option>
+                            <option value="الأمن السيبراني">الأمن السيبراني</option>
+                            <option value="علوم الحاسوب">علوم الحاسوب</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="stage">المرحلة الدراسية *</label>
+                        <select id="stage" name="stage" class="form-control" required>
+                            <option value="">اختر المرحلة</option>
+                            <option value="السنة الأولى">السنة الأولى</option>
+                            <option value="السنة الثانية">السنة الثانية</option>
+                            <option value="السنة الثالثة">السنة الثالثة</option>
+                            <option value="السنة الرابعة">السنة الرابعة</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">رقم الهاتف *</label>
+                        <input type="tel" id="phone" name="phone" class="form-control" 
+                               placeholder="أدخل رقم الهاتف" required>
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 0;">
+                            <input type="checkbox" id="enableFaceScan" name="enable_face_scan" 
+                                   style="width: 18px; height: 18px; margin-left: 10px; cursor: pointer;">
+                            <span style="font-size: 14px; color: var(--gray-dark);">تفعيل مسح الوجه (اختياري)</span>
+                        </label>
+                    </div>
+                    <input type="hidden" id="faceEmbedding" name="face_embedding" value="">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                            <i class="fas fa-redo"></i> إعادة تعيين
+                        </button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> حفظ الطالب
+                        </button>
+                    </div>
+                </form>
+                <div id="loadingIndicator" style="display:none; margin-top:12px; text-align:center;">
+                    <i class="fas fa-spinner fa-spin" style="margin-right:8px;"></i>
+                    <span>جاري الحفظ، الرجاء الانتظار...</span>
+                </div>
+                <div id="successMessage" class="alert alert-success" style="display: none; margin-top: 20px;">
+                    <i class="fas fa-check-circle"></i> تم إضافة الطالب بنجاح!
+                </div>
+                <div id="errorMessage" class="alert alert-danger" style="display: none; margin-top: 20px;">
+                    <i class="fas fa-times-circle"></i> <span id="errorText"></span>
+                </div>
+            </div>
+            <div style="order: 1;">
+                    <div id="faceScanSection" style="display: none;">
+                    <h3 style="margin-bottom: 20px; color: var(--primary-color);">
+                        <i class="fas fa-camera"></i> مسح الوجه
+                    </h3>
+                    <div id="loadingHuman" style="padding: 20px; background: rgba(52, 152, 219, 0.1); border-radius: 8px; text-align: center; margin-bottom: 15px; display: none;">
+                        <i class="fas fa-spinner fa-spin" style="color: var(--primary-color); font-size: 24px; margin-bottom: 10px;"></i>
+                        <p style="color: var(--primary-color); font-weight: 600; margin: 10px 0 0 0;">جاري تحميل نظام الكشف عن الوجه...</p>
+                        <p style="color: var(--gray-dark); font-size: 13px; margin: 5px 0 0 0;">قد يستغرق الأمر بعض الثواني</p>
+                    </div>
+                    <div class="video-container" id="videoContainer" style="position: relative; border-radius: 12px; overflow: hidden; background: #000; margin-bottom: 15px;">
+                        <video id="video" autoplay style="width: 100%; height: auto; display: block;"></video>
+                        <canvas id="canvas" style="display: none;"></canvas>
+                        <div id="faceDetectionIndicator" style="position: absolute; top: 15px; right: 15px; background: rgba(231, 76, 60, 0.9); color: white; padding: 8px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none; z-index: 10;">
+                            <i class="fas fa-info-circle"></i> لا يوجد وجه مكتشف
+                        </div>
+                    </div>
+                    <div id="faceImageContainer" style="display: none; margin-bottom: 15px; border-radius: 12px; overflow: hidden; background: #f5f5f5; border: 2px solid #2ecc71; box-shadow: 0 2px 8px rgba(46, 204, 113, 0.2);">
+                        <div style="position: relative;">
+                            <img id="capturedFaceImage" style="width: 100%; height: auto; display: block; border-radius: 10px;" />
+                            <div style="position: absolute; top: 10px; right: 10px; background: rgba(46, 204, 113, 0.9); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;">
+                                <i class="fas fa-check"></i> تم التقاط الصورة
+                            </div>
+                            <button type="button" id="deleteImageBtn" class="btn btn-danger" onclick="deleteStoredImage()" style="position: absolute; bottom: 10px; right: 10px; padding: 8px 12px; font-size: 12px; background: rgba(231, 76, 60, 0.95); border: none; color: white; border-radius: 6px; cursor: pointer;">
+                                <i class="fas fa-trash"></i> حذف الصورة
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" id="scanBtn" class="btn btn-primary btn-block" onclick="scanFace()" style="margin-bottom: 10px;">
+                        <i class="fas fa-camera"></i> مسح الوجه
+                    </button>
+                    <div id="scanLoading" style="display: none; margin-bottom: 10px; padding: 12px; background: rgba(52, 152, 219, 0.1); border-radius: 8px; text-align: center;">
+                        <i class="fas fa-spinner fa-spin" style="color: var(--primary-color); margin-left: 8px;"></i>
+                        <span style="color: var(--primary-color); font-weight: 600;">جاري معالجة الوجه...</span>
+                    </div>
+                    <button type="button" id="rescanBtn" class="btn btn-secondary btn-block" onclick="rescanFace()" style="display: none;">
+                        <i class="fas fa-redo"></i> إعادة المسح
+                    </button>
+                    <div id="faceStatus" style="margin-top: 15px; padding: 15px; background: rgba(46, 204, 113, 0.15); border-left: 5px solid #2ecc71; border-radius: 8px; text-align: center; display: none;">
+                        <i class="fas fa-check-circle" style="color: #2ecc71; font-size: 24px;"></i>
+                        <p style="margin: 12px 0 0 0; color: #2ecc71; font-weight: bold; font-size: 15px;">✓ تم مسح الوجه بنجاح!</p>
+                        <p style="margin: 8px 0 0 0; color: #27ae60; font-size: 13px;">الوجه جاهز للحفظ</p>
+                    </div>
+                    <div id="faceError" style="margin-top: 15px; padding: 15px; background: rgba(231, 76, 60, 0.15); border-left: 5px solid #e74c3c; border-radius: 8px; text-align: center; display: none;">
+                        <i class="fas fa-exclamation-circle" style="color: #e74c3c; font-size: 24px;"></i>
+                        <p id="faceErrorText" style="margin: 12px 0 0 0; color: #e74c3c; font-weight: bold; font-size: 14px;"></p>
+                    </div>
+                    <div style="margin-top: 20px; padding: 15px; background: var(--gray-light); border-radius: 8px; font-size: 13px; color: var(--gray-dark);">
+                        <p>
+                            <i class="fas fa-info-circle"></i>
+                            <strong>ملاحظات مهمة:</strong>
+                        </p>
+                        <ul style="margin: 10px 0 0 20px;">
+                            <li>تأكد من الإضاءة الجيدة</li>
+                            <li>ضع وجهك مباشرة أمام الكاميرا</li>
+                            <li>اضغط على زر "مسح الوجه" لالتقاط صورة</li>
+                            <li>سيتم تحليل وجهك ورسمه بلون أزرق</li>
+                            <li>ملء البيانات ثم الحفظ</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/python-face-api.js') }}"></script>
+<script>
+    let video = document.getElementById('video');
+    let canvas = document.getElementById('canvas');
+    let faceEmbedding = null;
+    let isDetecting = false;
+    let detectionInterval = null;
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log('تحميل صفحة إضافة الطالب...');
+        
+        // Check for edit mode
+        const urlParams = new URLSearchParams(window.location.search);
+        const editingId = urlParams.get('id');
+        if (editingId) {
+            document.getElementById('pageTitle').textContent = 'تعديل بيانات الطالب';
+            if (window.FirebaseAPI && typeof window.FirebaseAPI.getStudent === 'function') {
+                window.FirebaseAPI.getStudent(editingId).then(student => {
+                    if (student) {
+                        document.getElementById('fullName').value = student.full_name || '';
+                        document.getElementById('age').value = student.age || '';
+                        document.getElementById('department').value = student.department || '';
+                        document.getElementById('stage').value = student.stage || '';
+                        document.getElementById('phone').value = student.phone || '';
+                        if (student.face_embedding) {
+                            faceEmbedding = student.face_embedding;
+                            document.getElementById('faceEmbedding').value = JSON.stringify(faceEmbedding);
+                            document.getElementById('enableFaceScan').checked = true;
+                            document.getElementById('faceScanSection').style.display = 'block';
+                            
+                            // عرض الصورة المحفوظة بدون فتح الكاميرا
+                            if (student.face_image) {
+                                document.getElementById('capturedFaceImage').src = student.face_image;
+                                document.getElementById('faceImageContainer').style.display = 'block';
+                                document.getElementById('videoContainer').style.display = 'none';
+                                document.getElementById('scanBtn').style.display = 'none';
+                                document.getElementById('rescanBtn').style.display = 'block';
+                                document.getElementById('faceStatus').style.display = 'block';
+                                console.log('✓ تم تحميل صورة الوجه المحفوظة');
+                            }
+                        }
+                    } else {
+                        showError('لم يتم العثور على بيانات الطالب');
+                    }
+                }).catch(err => {
+                    console.error('Error loading student:', err);
+                    showError('خطأ في تحميل بيانات الطالب');
+                });
+            }
+        }
+        
+        // Face scan checkbox toggle
+        document.getElementById('enableFaceScan').addEventListener('change', async function() {
+            const faceScanSection = document.getElementById('faceScanSection');
+            const loadingHuman = document.getElementById('loadingHuman');
+            
+            if (this.checked) {
+                faceScanSection.style.display = 'block';
+                loadingHuman.style.display = 'block';
+                document.getElementById('videoContainer').style.display = 'none';
+                document.getElementById('scanBtn').style.display = 'none';
+                
+                try {
+                    console.log('بدء تهيئة الكاميرا...');
+                    await startCamera();
+                    loadingHuman.style.display = 'none';
+                    document.getElementById('videoContainer').style.display = 'block';
+                    document.getElementById('scanBtn').style.display = 'block';
+                    startLiveDetection();
+                    console.log('✓ الكاميرا جاهزة');
+                } catch (err) {
+                    loadingHuman.style.display = 'none';
+                    showError('خطأ في تشغيل الكاميرا: ' + err.message);
+                    this.checked = false;
+                    faceScanSection.style.display = 'none';
+                }
+            } else {
+                faceScanSection.style.display = 'none';
+                loadingHuman.style.display = 'none';
+                stopCamera();
+                stopLiveDetection();
+                faceEmbedding = null;
+                document.getElementById('faceEmbedding').value = '';
+            }
+        });
+    });
+    
+    async function startCamera() {
+        return new Promise((resolve, reject) => {
+            navigator.mediaDevices.getUserMedia({
+                video: { width: { ideal: 640 }, height: { ideal: 480 } },
+                audio: false
+            }).then(stream => {
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    video.play();
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    resolve();
+                };
+            }).catch(reject);
+        });
+    }
+    
+    function stopCamera() {
+        if (video && video.srcObject) {
+            video.srcObject.getTracks().forEach(track => track.stop());
+            video.srcObject = null;
+        }
+        stopLiveDetection();
+    }
+    
+    function startLiveDetection() {
+        if (isDetecting) return;
+        
+        isDetecting = true;
+        const indicator = document.getElementById('faceDetectionIndicator');
+        
+        detectionInterval = setInterval(async () => {
+            if (!video || !canvas) return;
+            
+            try {
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageData = canvas.toDataURL('image/jpeg', 0.9);
+                
+                // محاولة الكشف باستخدام Python
+                const result = await fetch('/api/face/detect-only', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
+                }).then(r => r.json());
+                
+                if (result.success && result.face_count > 0) {
+                    indicator.style.display = 'none';
+                } else {
+                    indicator.style.display = 'block';
+                }
+            } catch (err) {
+                indicator.style.display = 'block';
+            }
+        }, 500);
+    }
+    
+    function stopLiveDetection() {
+        if (detectionInterval) {
+            clearInterval(detectionInterval);
+            detectionInterval = null;
+            isDetecting = false;
+        }
+    }
+    
+    async function scanFace() {
+        const scanBtn = document.getElementById('scanBtn');
+        const scanLoading = document.getElementById('scanLoading');
+        
+        scanBtn.disabled = true;
+        scanBtn.style.display = 'none';
+        scanLoading.style.display = 'block';
+        
+        try {
+            console.log('بدء مسح الوجه باستخدام Python...');
+            stopLiveDetection();
+            
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL('image/jpeg', 0.95);
+            
+            // استخراج البصمة من Python
+            const result = await PythonFaceAPI.extractEmbedding(imageData);
+            
+            if (result.success && result.embedding) {
+                faceEmbedding = result.embedding;
+                document.getElementById('faceEmbedding').value = JSON.stringify(faceEmbedding);
+                
+                // عرض الصورة
+                document.getElementById('capturedFaceImage').src = imageData;
+                document.getElementById('faceImageContainer').style.display = 'block';
+                document.getElementById('videoContainer').style.display = 'none';
+                scanLoading.style.display = 'none';
+                document.getElementById('rescanBtn').style.display = 'block';
+                
+                stopCamera();
+                
+                document.getElementById('faceStatus').style.display = 'block';
+                document.getElementById('faceError').style.display = 'none';
+                
+                console.log('✓ تم مسح الوجه بنجاح');
+            } else {
+                showFaceError(result.message || 'فشل استخراج البصمة');
+                scanBtn.disabled = false;
+                scanBtn.style.display = 'block';
+                scanLoading.style.display = 'none';
+                startLiveDetection();
+            }
+        } catch (error) {
+            console.error('Face scan error:', error);
+            showFaceError(error.message || 'فشل مسح الوجه');
+            scanBtn.disabled = false;
+            scanBtn.style.display = 'block';
+            scanLoading.style.display = 'none';
+            startLiveDetection();
+        }
+    }
+    
+    async function rescanFace() {
+        document.getElementById('videoContainer').style.display = 'block';
+        document.getElementById('faceImageContainer').style.display = 'none';
+        document.getElementById('scanBtn').style.display = 'block';
+        document.getElementById('rescanBtn').style.display = 'none';
+        document.getElementById('faceStatus').style.display = 'none';
+        document.getElementById('faceError').style.display = 'none';
+        
+        faceEmbedding = null;
+        document.getElementById('faceEmbedding').value = '';
+        
+        try {
+            await startCamera();
+            startLiveDetection();
+        } catch (err) {
+            showFaceError('خطأ في إعادة تشغيل الكاميرا: ' + err.message);
+        }
+    }
+    
+    async function deleteStoredImage() {
+        const confirmed = confirm(
+            '⚠️ تحذير!\n\n' +
+            'هل أنت متأكد من حذف صورة الوجه المحفوظة؟\n\n' +
+            'سيتم حذف الصورة وتجهيز النظام لالتقاط صورة جديدة.\n' +
+            'لا يمكن التراجع عن هذه العملية.'
+        );
+        
+        if (!confirmed) {
+            console.log('تم إلغاء حذف الصورة');
+            return;
+        }
+        
+        console.log('جاري حذف الصورة المحفوظة...');
+        
+        document.getElementById('faceImageContainer').style.display = 'none';
+        document.getElementById('rescanBtn').style.display = 'none';
+        document.getElementById('faceStatus').style.display = 'none';
+        document.getElementById('faceError').style.display = 'none';
+        
+        faceEmbedding = null;
+        document.getElementById('faceEmbedding').value = '';
+        
+        try {
+            console.log('تجهيز النظام لالتقاط صورة جديدة...');
+            document.getElementById('loadingHuman').style.display = 'block';
+            
+            await startCamera();
+            startLiveDetection();
+            
+            document.getElementById('loadingHuman').style.display = 'none';
+            document.getElementById('videoContainer').style.display = 'block';
+            document.getElementById('scanBtn').style.display = 'block';
+            
+            console.log('✓ تم تجهيز النظام لالتقاط صورة جديدة');
+            
+            const successDiv = document.createElement('div');
+            successDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #2ecc71;
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                animation: slideInRight 0.3s ease;
+            `;
+            successDiv.innerHTML = '<i class="fas fa-check-circle"></i> تم حذف الصورة بنجاح. جاهز لالتقاط صورة جديدة.';
+            document.body.appendChild(successDiv);
+            
+            setTimeout(() => {
+                successDiv.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => successDiv.remove(), 300);
+            }, 3000);
+            
+        } catch (err) {
+            console.error('خطأ أثناء حذف الصورة:', err);
+            document.getElementById('loadingHuman').style.display = 'none';
+            showFaceError('خطأ: ' + err.message + '. حاول تفعيل مسح الوجه مجدداً.');
+            document.getElementById('faceImageContainer').style.display = 'block';
+            document.getElementById('rescanBtn').style.display = 'block';
+        }
+    }
+    
+    function showFaceError(message) {
+        console.error('Face error:', message);
+        document.getElementById('faceErrorText').textContent = message;
+        document.getElementById('faceError').style.display = 'block';
+        document.getElementById('faceStatus').style.display = 'none';
+    }
+    
+    function handleFormSubmit(event) {
+        event.preventDefault();
+        
+        const enableFaceScan = document.getElementById('enableFaceScan').checked;
+        if (enableFaceScan && !faceEmbedding) {
+            showError('يرجى مسح الوجه أولاً أو إلغاء تفعيل مسح الوجه');
+            return;
+        }
+        
+        setLoading(true);
+        
+        const formData = {
+            full_name: document.getElementById('fullName').value,
+            department: document.getElementById('department').value,
+            stage: document.getElementById('stage').value,
+            phone: document.getElementById('phone').value,
+            age: document.getElementById('age').value ? parseInt(document.getElementById('age').value) : null,
+            face_embedding: faceEmbedding
+        };
+        
+        const editingId = new URLSearchParams(window.location.search).get('id');
+        
+        if (editingId && window.FirebaseAPI && typeof window.FirebaseAPI.updateStudent === 'function') {
+            window.FirebaseAPI.updateStudent(editingId, formData)
+                .then(() => {
+                    setLoading(false);
+                    document.getElementById('successMessage').style.display = 'block';
+                    document.getElementById('successMessage').textContent = '✓ تم تعديل الطالب بنجاح!';
+                    document.getElementById('errorMessage').style.display = 'none';
+                    setTimeout(() => {
+                        window.location.href = '{{ url_for("students") }}';
+                    }, 1200);
+                })
+                .catch(err => {
+                    setLoading(false);
+                    console.error('Firebase updateStudent error', err);
+                    showError('فشل في تعديل الطالب');
+                });
+            return;
+        }
+        
+        if (window.FirebaseAPI && typeof window.FirebaseAPI.addStudent === 'function') {
+            window.FirebaseAPI.addStudent(formData)
+                .then(id => {
+                    setLoading(false);
+                    document.getElementById('successMessage').style.display = 'block';
+                    document.getElementById('errorMessage').style.display = 'none';
+                    setTimeout(() => {
+                        resetForm();
+                        faceEmbedding = null;
+                        setTimeout(() => { window.location.href = '{{ url_for("students") }}'; }, 1200);
+                    }, 600);
+                })
+                .catch(err => {
+                    setLoading(false);
+                    console.error('Firebase addStudent error', err);
+                    showError('فشل في إضافة الطالب (Firebase). تحقق من إعدادات Firestore وقواعد الوصول.');
+                });
+            return;
+        }
+        
+        setLoading(false);
+        showError('تعذر حفظ البيانات: لم يتم تهيئة Firebase على المتصفح.');
+    }
+    
+    function setLoading(on) {
+        const indicator = document.getElementById('loadingIndicator');
+        const form = document.getElementById('studentForm');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const resetBtn = form.querySelector('button[type="button"]');
+        if (on) {
+            if (indicator) indicator.style.display = 'block';
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.classList.add('disabled'); }
+            if (resetBtn) { resetBtn.disabled = true; resetBtn.classList.add('disabled'); }
+        } else {
+            if (indicator) indicator.style.display = 'none';
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.classList.remove('disabled'); }
+            if (resetBtn) { resetBtn.disabled = false; resetBtn.classList.remove('disabled'); }
+        }
+    }
+    
+    function resetForm() {
+        document.getElementById('studentForm').reset();
+        faceEmbedding = null;
+        document.getElementById('faceEmbedding').value = '';
+        document.getElementById('successMessage').style.display = 'none';
+        document.getElementById('errorMessage').style.display = 'none';
+        document.getElementById('faceStatus').style.display = 'none';
+        document.getElementById('faceError').style.display = 'none';
+        document.getElementById('scanLoading').style.display = 'none';
+        document.getElementById('videoContainer').style.display = 'block';
+        document.getElementById('faceImageContainer').style.display = 'none';
+        document.getElementById('scanBtn').style.display = 'block';
+        document.getElementById('rescanBtn').style.display = 'none';
+    }
+    
+    function showError(message) {
+        document.getElementById('errorText').textContent = message;
+        document.getElementById('errorMessage').style.display = 'block';
+        document.getElementById('successMessage').style.display = 'none';
+    }
+    
+    window.addEventListener('beforeunload', function() {
+        if (typeof stopCamera === 'function') stopCamera();
+        if (typeof stopLiveDetection === 'function') stopLiveDetection();
+    });
+</script>
+
+<style>
+    @keyframes slideInRight {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+    }
+</style>
+
+{% endblock %}

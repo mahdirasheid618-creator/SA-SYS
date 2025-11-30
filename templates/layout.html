@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="ar">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>{% block title %}نظام إدارة الطلاب والحضور{% endblock %}</title>
+    <script>
+        try {
+            var __savedTheme = null;
+            try { __savedTheme = localStorage.getItem('theme'); } catch (e) { __savedTheme = null; }
+            if (!__savedTheme) __savedTheme = 'light';
+            document.documentElement.setAttribute('data-theme', __savedTheme);
+        } catch (e) { }
+    </script>
+        <script>
+        // حفظ وقت أول تسجيل دخول في localStorage
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                if (!localStorage.getItem('first_login_time')) {
+                    // استخدم توقيت النظام الحالي (ISO string)
+                    localStorage.setItem('first_login_time', new Date().toISOString());
+                }
+            } catch(e) {}
+        });
+        </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#2c8fce">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/tech-256x256.png') }}">
+    <style>
+        /* Resizer and icons-only sidebar overrides */
+        /* When icons-only, hide the caption but keep a compact logo image */
+        .sidebar.icons-only .sidebar-logo-caption { display: none; }
+        .sidebar.icons-only .sidebar-logo-img { width: 48px; height: 48px; border-radius: 8px; }
+
+        .sidebar.icons-only .sidebar-menu a span {
+            display: none;
+        }
+
+        .sidebar.icons-only .sidebar-menu a {
+            justify-content: center;
+            padding-inline: 0.75rem;
+        }
+
+        /* Resizer handle removed: dragging is handled from the sidebar edge itself. */
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="{{ url_for('static', filename='js/xlsx.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/helpers.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/router.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/forms.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/storage.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/xlsx.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/diagnostics.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/firebase_init.js') }}"></script>
+    <div id="toast-root">
+        <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+    </div>
+    <!-- Install banner (hidden by default). shown when browser fires beforeinstallprompt -->
+    <div id="installBanner" style="display:none;position:fixed;right:16px;bottom:18px;z-index:14000;">
+        <div style="display:flex;align-items:center;gap:12px;background:var(--white);padding:10px 14px;border-radius:12px;box-shadow:0 10px 30px rgba(2,6,23,0.12);">
+            <img src="{{ url_for('static', filename='images/tech-64x64.png') }}" style="width:40px;height:40px;object-fit:contain;border-radius:8px;" alt="app">
+            <div style="display:flex;flex-direction:column;gap:2px;text-align:right;">
+                <div style="font-weight:800;font-size:14px;">تثبيت التطبيق</div>
+                <div style="font-size:12px;color:var(--muted);">احصل على وصول سريع للتطبيق</div>
+            </div>
+            <div style="display:flex;gap:8px;margin-inline-start:8px;">
+                <button id="installBtn" style="background:var(--secondary-color);color:#fff;border:none;padding:8px 12px;border-radius:10px;font-weight:800;cursor:pointer;">تثبيت</button>
+                <button id="installDismiss" style="background:transparent;color:var(--muted);border:none;padding:8px 10px;border-radius:10px;cursor:pointer;">إغلاق</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        window.showToast = function (message, type = 'success', duration = 2000) {
+            try {
+                const container = document.getElementById('toastContainer');
+                if (!container) return;
+                const t = document.createElement('div');
+                t.className = 'toast ' + (type || 'success');
+                t.innerHTML = `<div class="toast-message">${String(message)}</div>`;
+                container.appendChild(t);
+                requestAnimationFrame(() => t.classList.add('show'));
+                setTimeout(() => {
+                    t.classList.remove('show');
+                    setTimeout(() => { try { container.removeChild(t); } catch (e) { } }, 220);
+                }, duration || 2000);
+            } catch (e) { console.warn('showToast error', e); }
+        };
+    </script>
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <div class="login-box" role="group" aria-label="حالة المستخدم">
+                    <div id="headerAvatar" class="header-avatar cursor-pointer" title="">
+                    <img id="headerAvatarImg" src="https://www.gravatar.com/avatar/?d=mp&s=200" alt="avatar" />
+                </div>
+                <div class="login-text">
+                    <span class="login-label">مسجل الدخول</span>
+                    <span id="headerRoleLeft" class="login-role" aria-hidden="false"></span>
+                </div>
+                <div id="profileDropdown" class="profile-dropdown">
+                    <div class="profile-dropdown-header">
+                        <div class="profile-dropdown-avatar">
+                            <img id="dropdownAvatarImg" src="https://www.gravatar.com/avatar/?d=mp&s=200" alt="avatar" />
+                        </div>
+                        <div class="profile-dropdown-info">
+                            <h3 id="dropdownUserName">المستخدم</h3>
+                            <p id="dropdownUserRole">الدور</p>
+                        </div>
+                    </div>
+
+                    <div class="profile-dropdown-divider"></div>
+
+                    <div class="profile-dropdown-section">
+                        <div class="profile-dropdown-item">
+                            <i class="fas fa-user"></i>
+                            <div class="profile-dropdown-item-content">
+                                <span class="profile-dropdown-label">الاسم الكامل</span>
+                                <span class="profile-dropdown-value" id="dropdownFullName">-</span>
+                            </div>
+                        </div>
+                        <div class="profile-dropdown-item">
+                            <i class="fas fa-briefcase"></i>
+                            <div class="profile-dropdown-item-content">
+                                <span class="profile-dropdown-label">اللقب الوظيفي</span>
+                                <span class="profile-dropdown-value" id="dropdownJobTitle">-</span>
+                            </div>
+                        </div>
+                        <div class="profile-dropdown-item">
+                            <i class="fas fa-clock"></i>
+                            <div class="profile-dropdown-item-content">
+                                <span class="profile-dropdown-label">آخر تسجيل دخول</span>
+                                <span class="profile-dropdown-value" id="dropdownLastLogin">-</span>
+                            </div>
+                        </div>
+                        <div class="profile-dropdown-item">
+                            <i class="fas fa-envelope"></i>
+                            <div class="profile-dropdown-item-content">
+                                <span class="profile-dropdown-label">البريد الإلكتروني</span>
+                                <span class="profile-dropdown-value" id="dropdownEmail">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-dropdown-divider"></div>
+
+                    <div class="profile-dropdown-footer">
+                        <a href="{{ url_for('logout') }}" class="profile-dropdown-logout">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>تسجيل الخروج</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="left">
+                <button class="sidebar-toggle show-mobile" id="sidebarToggleHeader" title="فتح القائمة"
+                    onclick="toggleSidebar()" style="background:none;border:none;font-size:20px;color:inherit;">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            <div class="greeting" id="siteGreeting">
+                <i id="greetingThemeIcon" class="fas fa-sun" aria-hidden="true"
+                    style="font-size:16px; margin-left:8px;"></i>
+                <span id="greetingText"></span>
+            </div>
+        </div>
+    </header>
+    <button class="sidebar-toggle" id="sidebarToggle" title="فتح القائمة" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <h1 class="sidebar-brand">
+                <img class="sidebar-logo-img" src="{{ url_for('static', filename='images/tech-256x256.png') }}"
+                     srcset="{{ url_for('static', filename='images/tech-64x64.png') }} 64w, {{ url_for('static', filename='images/tech-128x128.png') }} 128w, {{ url_for('static', filename='images/tech-256x256.png') }} 256w, {{ url_for('static', filename='images/tech-512x512.png') }} 512w"
+                     sizes="(max-width:480px) 40px, (max-width:1024px) 56px, 72px"
+                     alt="SA System">
+                <div class="sidebar-logo-caption">نظام SA SYSTEM</div>
+            </h1>
+        </div>
+        <ul class="sidebar-menu">
+            <li>
+                <a href="{{ url_for('dashboard') }}">
+                    <i class="fas fa-home"></i>
+                    <span>الصفحة الرئيسية</span>
+                </a>
+            </li>
+            <li class="no-instructor">
+                <a href="{{ url_for('attendance') }}">
+                    <i class="fas fa-clipboard-list"></i>
+                    <span>تسجيل الحضور</span>
+                </a>
+            </li>
+            <li class="no-instructor">
+                <a href="{{ url_for('students') }}">
+                    <i class="fas fa-users"></i>
+                    <span>تسجيل الطلاب</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('reports') }}">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>التقارير</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('instructors') }}">
+                    <i class="fas fa-chalkboard-user"></i>
+                    <span>الأساتذة والتدريسيين</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('supervisors') }}">
+                    <i class="fas fa-user-tie"></i>
+                    <span>المشرفين</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('settings') }}">
+                    <i class="fas fa-cog"></i>
+                    <span>الإعدادات</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('certificate') }}">
+                    <i class="fas fa-award"></i>
+                    <span>شهادة المشروع</span>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url_for('logout') }}">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>خروج</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+    {% block extra_js %}{% endblock %}
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                const willOpen = !sidebar.classList.contains('open');
+                sidebar.classList.toggle('open');
+                try { document.body.classList.toggle('sidebar-open', willOpen); } catch (e) { }
+            }
+        }
+        document.querySelectorAll('.sidebar-menu a').forEach(link => {
+            link.addEventListener('click', function () {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar && window.innerWidth <= 1024) {
+                    sidebar.classList.remove('open');
+                }
+            });
+        });
+        document.addEventListener('click', function (e) {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.getElementById('sidebarToggle');
+            if (sidebar && toggle && window.innerWidth <= 1024) {
+                if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
+                    sidebar.classList.remove('open');
+                    try { document.body.classList.remove('sidebar-open'); } catch (e) { }
+                }
+            }
+        });
+        document.addEventListener('touchmove', function (e) {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar && sidebar.classList.contains('open') && e.target.closest('.sidebar')) {
+                return;
+            }
+        }, { passive: false });
+        (function () {
+            async function getProfile(auth) {
+                try {
+                    if (!auth) return null;
+                    const uname = (auth.username || '').toString().toLowerCase().trim();
+                    if (auth.user_type === 'instructor') {
+                        if (window.FirebaseAPI && typeof window.FirebaseAPI.subscribeInstructors === 'function') {
+                            return new Promise((resolve) => {
+                                const unsub = window.FirebaseAPI.subscribeInstructors(list => {
+                                    try { unsub && typeof unsub === 'function' && unsub(); } catch (e) { }
+                                    for (const s of list || []) {
+                                        const candidates = [s.username, s.Username, s.userName, s.Name, s.name, s.Email, s.email];
+                                        for (const c of candidates) { if (c && c.toString().toLowerCase().trim() === uname) return resolve(s); }
+                                    }
+                                    return resolve(null);
+                                });
+                                setTimeout(() => { try { unsub && typeof unsub === 'function' && unsub(); } catch (e) { }; resolve(null); }, 3000);
+                            });
+                        }
+                    }
+                    if (window.FirebaseAPI && typeof window.FirebaseAPI.fetchAllUsers === 'function') {
+                        const users = await window.FirebaseAPI.fetchAllUsers();
+                        for (const u of users || []) {
+                            const candidates = [u.Username, u.username, u.UserName, u.FullName, u.Full_Name, u.Name, u.name, u.Email, u.email];
+                            for (const c of candidates) { if (c && c.toString().toLowerCase().trim() === uname) return u; }
+                        }
+                    }
+                    return null;
+                } catch (e) { console.warn('getProfile error', e); return null; }
+            }
+
+            function timeGreeting() {
+                const now = new Date();
+                const h = now.getHours();
+                if (h >= 0 && h < 12) return 'صباح الخير';
+                return 'مساء الخير';
+            }
+
+            async function populateGreeting() {
+                try {
+                    let auth = null;
+                    try { auth = JSON.parse(localStorage.getItem('auth_user')); } catch (e) { auth = null; }
+                    const el = document.getElementById('siteGreeting');
+                    if (!el) return;
+                    if (!auth || !auth.username) {
+                        try { const gText = document.getElementById('greetingText'); if (gText) gText.textContent = 'مرحباً'; else el.textContent = 'مرحباً'; } catch (e) { el.textContent = 'مرحباً'; }
+                        return;
+                    }
+                    const rec = await getProfile(auth);
+                    let display = auth.username;
+                    if (rec) {
+                        const name = rec.FullName || rec.full_name || rec.Name || rec.name || rec.Username || rec.username || auth.username;
+                        display = name;
+                    }
+                    // update greeting text (only update the text span to avoid overwriting the icon)
+                    try {
+                        const gText = document.getElementById('greetingText');
+                        const greetIcon = document.getElementById('greetingThemeIcon');
+                        const greeting = timeGreeting();
+                        if (gText) {
+                            gText.textContent = `${greeting} يا ${display}`;
+                        }
+                        // set icon based on local time (sun for morning, moon for evening/night)
+                        try {
+                            const now = new Date();
+                            const h = now.getHours();
+                            if (greetIcon) {
+                                if (h >= 5 && h < 18) {
+                                    greetIcon.className = 'fas fa-sun';
+                                } else {
+                                    greetIcon.className = 'fas fa-moon';
+                                }
+                            }
+                        } catch (e) { }
+                    } catch (e) { /* ignore */ }
+                    // set avatar and role in header
+                    try {
+                        const avatarImg = document.getElementById('headerAvatarImg');
+                        const avatarWrap = document.getElementById('headerAvatar');
+                        const roleEl = document.getElementById('headerRole');
+                        if (roleEl) {
+                            const roleLabel = (auth && auth.user_type === 'supervisor') ? 'المسجل: مشرف النظام' : ((auth && auth.user_type === 'instructor') ? 'المسجل: أستاذ' : '');
+                            roleEl.textContent = roleLabel;
+                        }
+                        // also set the left-side fixed role label (next to avatar)
+                        try {
+                            const roleLeft = document.getElementById('headerRoleLeft');
+                            if (roleLeft) { roleLeft.textContent = (auth && auth.user_type === 'supervisor') ? 'المسجل: مشرف النظام' : ((auth && auth.user_type === 'instructor') ? 'المسجل: أستاذ' : ''); }
+                        } catch (e) { }
+                        if (avatarImg) {
+                            let src = null;
+                            if (rec) {
+                                src = rec.photo || rec.Photo || rec.photo_url || rec.photoUrl || rec.image || null;
+                            }
+                            if (!src && auth && auth.username) {
+                                // fallback: try to find by username in users list (fast path)
+                                try {
+                                    if (window.FirebaseAPI && typeof window.FirebaseAPI.fetchAllUsers === 'function') {
+                                        window.FirebaseAPI.fetchAllUsers().then(list => {
+                                            const uname = (auth.username || '').toString().toLowerCase().trim();
+                                            for (const u of list || []) {
+                                                const candidates = [u.Username, u.username, u.FullName, u.full_name, u.name, u.Name];
+                                                for (const c of candidates) { if (c && c.toString().toLowerCase().trim() === uname) { const s = u.photo || u.Photo || u.photo_url || u.photoUrl || null; if (s) avatarImg.src = s; if (avatarWrap) avatarWrap.setAttribute('title', u.FullName || u.full_name || u.Username || auth.username); return; } }
+                                            }
+                                        }).catch(() => { });
+                                    }
+                                } catch (e) { }
+                            }
+                            if (src) { avatarImg.src = src; if (avatarWrap) avatarWrap.setAttribute('title', (rec.FullName || rec.full_name || rec.Username || auth.username) || ''); }
+                            else { if (avatarWrap) avatarWrap.setAttribute('title', auth && auth.username ? auth.username : ''); }
+                        }
+                    } catch (e) { console.warn('set avatar failed', e); }
+                } catch (e) { console.warn('populateGreeting failed', e); }
+            }
+
+            // run on Firebase ready and on DOMContentLoaded
+            try {
+                window.addEventListener('DOMContentLoaded', populateGreeting);
+                if (window.FirebaseReady) window.FirebaseReady.then(populateGreeting).catch(() => { });
+            } catch (e) { }
+        })();
+
+        // Profile Dropdown Toggle and Population
+        (function () {
+            try {
+                const headerAvatar = document.getElementById('headerAvatar');
+                const profileDropdown = document.getElementById('profileDropdown');
+                const loginBox = document.querySelector('.login-box');
+
+                if (!headerAvatar || !profileDropdown || !loginBox) return;
+
+                // Toggle expanded login box and dropdown (shared handler)
+                function toggleLoginBox(e) {
+                    e.stopPropagation();
+                    const isExpanded = loginBox.classList.toggle('expanded');
+                    profileDropdown.classList.toggle('show', isExpanded);
+                    if (isExpanded) {
+                        loginBox.classList.add('glow');
+                        try { populateDropdown(); } catch (err) { /* ignore */ }
+                    } else {
+                        loginBox.classList.remove('glow');
+                    }
+                }
+                // Always populate dropdown on open
+                function openLoginBox(e) {
+                    e.stopPropagation();
+                    loginBox.classList.add('expanded', 'glow');
+                    profileDropdown.classList.add('show');
+                    try { populateDropdown(); } catch (err) { /* ignore */ }
+                }
+                function closeLoginBox() {
+                    loginBox.classList.remove('expanded', 'glow');
+                    profileDropdown.classList.remove('show');
+                }
+                headerAvatar.addEventListener('click', function(e) {
+                    if (!loginBox.classList.contains('expanded')) {
+                        openLoginBox(e);
+                    } else {
+                        closeLoginBox();
+                    }
+                });
+                // also allow clicking the whole box to toggle
+                loginBox.addEventListener('click', function (e) {
+                    if (e.target.closest('#profileDropdown')) return;
+                    if (!loginBox.classList.contains('expanded')) {
+                        openLoginBox(e);
+                    } else {
+                        closeLoginBox();
+                    }
+                });
+
+                // Close dropdown/expanded box when clicking outside the login box
+                document.addEventListener('click', function (e) {
+                    if (!loginBox.contains(e.target)) {
+                        closeLoginBox();
+                    }
+                });
+
+                // Prevent dropdown from closing when clicking inside it
+                profileDropdown.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                });
+
+                // Populate dropdown with user data (always run on DOMContentLoaded to set initial value)
+                document.addEventListener('DOMContentLoaded', function() { populateDropdown(); });
+                async function populateDropdown() {
+                    try {
+                        let auth = null;
+                        try { auth = JSON.parse(localStorage.getItem('auth_user')); } catch (e) { auth = null; }
+
+                        if (!auth || !auth.username) {
+                            return;
+                        }
+
+                        // Get user profile
+                        const rec = await (async function getProfile(auth) {
+                            try {
+                                if (!auth) return null;
+                                const uname = (auth.username || '').toString().toLowerCase().trim();
+                                if (auth.user_type === 'instructor') {
+                                    // try instructors
+                                    if (window.FirebaseAPI && typeof window.FirebaseAPI.subscribeInstructors === 'function') {
+                                        return new Promise((resolve) => {
+                                            const unsub = window.FirebaseAPI.subscribeInstructors(list => {
+                                                try { unsub && typeof unsub === 'function' && unsub(); } catch (e) { }
+                                                for (const s of list || []) {
+                                                    const candidates = [s.username, s.Username, s.userName, s.Name, s.name, s.Email, s.email];
+                                                    for (const c of candidates) { if (c && c.toString().toLowerCase().trim() === uname) return resolve(s); }
+                                                }
+                                                return resolve(null);
+                                            });
+                                            setTimeout(() => { try { unsub && typeof unsub === 'function' && unsub(); } catch (e) { }; resolve(null); }, 3000);
+                                        });
+                                    }
+                                }
+                                // fallback for supervisor or any user
+                                if (window.FirebaseAPI && typeof window.FirebaseAPI.fetchAllUsers === 'function') {
+                                    const users = await window.FirebaseAPI.fetchAllUsers();
+                                    for (const u of users || []) {
+                                        const candidates = [u.Username, u.username, u.UserName, u.FullName, u.Full_Name, u.Name, u.name, u.Email, u.email];
+                                        for (const c of candidates) { if (c && c.toString().toLowerCase().trim() === uname) return u; }
+                                    }
+                                }
+                                return null;
+                            } catch (e) { console.warn('getProfile error', e); return null; }
+                        })(auth);
+
+                        // Get user data
+                        // derive fields using profile record first, then fall back to auth object
+                        const title = (rec && (rec.Scientific_title || rec.scientific_title || rec.Title || rec.title || rec.degree || rec.Degree)) || '';
+                        const fullName = (rec && (rec.FullName || rec.full_name || rec.Name || rec.name || rec.Username || rec.username)) || auth.full_name || auth.FullName || auth.name || auth.username || auth.Username || auth.username;
+                        const jobTitle = title || (auth.user_type === 'supervisor' ? 'مشرف النظام' : (auth.user_type === 'instructor' ? 'أستاذ' : (auth.job_title || auth.title || 'مستخدم')));
+                        // prefer university email field `emailunivers` if present
+                        const email = (rec && (rec.emailunivers || rec.Email || rec.email || rec.mail)) || auth.email || auth.Email || '-';
+                        const avatarSrc = (rec && (rec.photo || rec.Photo || rec.photo_url || rec.photoUrl || rec.image)) || auth.photo || auth.avatar || auth.photoUrl || null;
+
+                        // Update dropdown avatar (use header avatar as last resort)
+                        const dropdownAvatarImg = document.getElementById('dropdownAvatarImg');
+                        try {
+                            if (dropdownAvatarImg) {
+                                if (avatarSrc) dropdownAvatarImg.src = avatarSrc;
+                                else {
+                                    const headerImg = document.getElementById('headerAvatarImg');
+                                    if (headerImg && headerImg.src) dropdownAvatarImg.src = headerImg.src;
+                                }
+                            }
+                        } catch (e) { }
+
+                        // Update dropdown info
+                        const dropdownUserName = document.getElementById('dropdownUserName');
+                        const dropdownUserRole = document.getElementById('dropdownUserRole');
+                        const dropdownFullName = document.getElementById('dropdownFullName');
+                        const dropdownJobTitle = document.getElementById('dropdownJobTitle');
+                        const dropdownEmail = document.getElementById('dropdownEmail');
+                        const dropdownLastLogin = document.getElementById('dropdownLastLogin');
+
+                        if (dropdownUserName) dropdownUserName.textContent = fullName || auth.username;
+                        if (dropdownUserRole) dropdownUserRole.textContent = jobTitle || '';
+                        if (dropdownFullName) dropdownFullName.textContent = fullName || auth.username;
+                        if (dropdownJobTitle) dropdownJobTitle.textContent = jobTitle || '';
+                        if (dropdownEmail) dropdownEmail.textContent = email || '-';
+
+                        // Get and display last login date in 'منذ + الوقت' format, fallback to first_login_time
+                        if (dropdownLastLogin) {
+                            try {
+                                let lastLoginStr = localStorage.getItem('last_login');
+                                if ((!lastLoginStr || lastLoginStr === '') && auth) {
+                                    lastLoginStr = auth.last_login || auth.lastLogin || auth.timestamp || auth.login_at || auth.logged_at || null;
+                                }
+                                // fallback to first_login_time if no last_login
+                                if (!lastLoginStr || lastLoginStr === '') {
+                                    lastLoginStr = localStorage.getItem('first_login_time');
+                                }
+                                if (lastLoginStr) {
+                                    const lastLoginDate = new Date(lastLoginStr);
+                                    const now = new Date();
+                                    let diff = Math.floor((now - lastLoginDate) / 1000); // seconds
+                                    let displayText = '';
+                                    if (diff < 60) {
+                                        displayText = 'منذ أقل من دقيقة';
+                                    } else if (diff < 3600) {
+                                        const mins = Math.floor(diff / 60);
+                                        const unit = (mins === 1) ? 'دقيقة' : (mins < 11 ? 'دقائق' : 'دقيقة');
+                                        displayText = 'منذ ' + mins + ' ' + unit;
+                                    } else if (diff < 86400) {
+                                        const hours = Math.floor(diff / 3600);
+                                        const unit = (hours === 1) ? 'ساعة' : (hours < 11 ? 'ساعات' : 'ساعة');
+                                        displayText = 'منذ ' + hours + ' ' + unit;
+                                    } else if (diff < 2592000) { // less than 30 days
+                                        const days = Math.floor(diff / 86400);
+                                        const unit = (days === 1) ? 'يوم' : (days < 11 ? 'أيام' : 'يوم');
+                                        displayText = 'منذ ' + days + ' ' + unit;
+                                    } else if (diff < 31104000) { // less than 12 months
+                                        const months = Math.floor(diff / 2592000);
+                                        const unit = (months === 1) ? 'شهر' : (months < 11 ? 'أشهر' : 'شهر');
+                                        displayText = 'منذ ' + months + ' ' + unit;
+                                    } else {
+                                        const years = Math.floor(diff / 31104000);
+                                        const unit = (years === 1) ? 'سنة' : (years < 11 ? 'سنوات' : 'سنة');
+                                        displayText = 'منذ ' + years + ' ' + unit;
+                                    }
+                                    dropdownLastLogin.textContent = displayText;
+                                } else {
+                                    dropdownLastLogin.textContent = '-';
+                                }
+                            } catch (e) {
+                                dropdownLastLogin.textContent = '-';
+                            }
+                        }
+
+                    } catch (e) { console.warn('populateDropdown failed', e); }
+                }
+
+                // ensure sidebar and resizer elements exist before initializing resizer logic
+                const sidebar = document.getElementById('sidebar');
+                // resizer element removed; only sidebar is required
+                if (!sidebar) {
+                    console.warn('sidebar init: missing sidebar element');
+                    return;
+                }
+
+                // ensure pointer/touch gestures are handled by the sidebar edge
+                try {
+                    sidebar.style.touchAction = 'none';
+                    sidebar.style.pointerEvents = 'auto';
+                } catch (e) { }
+
+                const MIN_WIDTH = 96; // icon-only width (made larger for medium icons-only state)
+                const DEFAULT_WIDTH = 280;
+                const MAX_WIDTH = 520;
+                // how many pixels from the sidebar inner edge should show the resize cursor
+                const EDGE_THRESHOLD = 20;
+                const STORAGE_KEY = 'sidebar_width';
+
+                function applyWidth(w) {
+                    // on small screens skip applying desktop resizing
+                    if (window.innerWidth <= 1024) return;
+                    w = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, Math.round(w)));
+                    sidebar.style.width = w + 'px';
+                    // position resizer at left edge of sidebar: distance from right = w
+                                // no visible resizer to position; nothing to do here
+                    // icons-only mode when small
+                    if (w <= MIN_WIDTH) sidebar.classList.add('icons-only'); else sidebar.classList.remove('icons-only');
+                    // when in icons-only mode, set data-tooltip on each menu link (used by CSS custom tooltip)
+                    try {
+                        const links = sidebar.querySelectorAll('.sidebar-menu a');
+                        links.forEach(a => {
+                            try {
+                                const span = a.querySelector('span');
+                                const text = span ? span.textContent.trim() : (a.getAttribute('aria-label') || '');
+                                if (w <= MIN_WIDTH) {
+                                    if (text) a.setAttribute('data-tooltip', text);
+                                } else {
+                                    a.removeAttribute('data-tooltip');
+                                }
+                            } catch (e) { }
+                        });
+                    } catch (e) { }
+                    // adjust main content margin so open forms and content resize with the sidebar
+                    try {
+                        const main = document.querySelector('.main-content');
+                        const headerInner = document.querySelector('.header-inner');
+                        if (main) {
+                            main.style.marginRight = w + 'px';
+                        }
+                        // ensure header-inner keeps the same right gap as main content
+                        if (headerInner) { headerInner.style.marginRight = w + 'px'; }
+                        // also shrink header background so it does not overlay the sidebar
+                        try {
+                            const headerEl = document.querySelector('.site-header');
+                            if (headerEl) headerEl.style.right = w + 'px';
+                        } catch (e) { }
+                        // adjust greeting to sit just before the sidebar (so it appears at the right edge of content)
+                        try {
+                            const greet = document.getElementById('siteGreeting');
+                            if (greet) greet.style.right = '6px';
+                        } catch (e) { }
+                    } catch (e) {/* ignore */ }
+                }
+
+                // load saved width
+                try {
+                    const saved = parseInt(localStorage.getItem(STORAGE_KEY), 10);
+                    if (!isNaN(saved)) applyWidth(saved); else applyWidth(DEFAULT_WIDTH);
+                } catch (e) { applyWidth(DEFAULT_WIDTH); }
+
+                // restore resizer position on resize
+                window.addEventListener('resize', function () {
+                    const w = parseInt(sidebar.style.width, 10) || DEFAULT_WIDTH;
+                    const headerInner = document.querySelector('.header-inner');
+                    if (window.innerWidth <= 1024) {
+                        try { document.querySelector('.main-content').style.marginRight = ''; } catch (e) { }
+                        if (headerInner) headerInner.style.marginRight = '';
+                        try { const headerEl = document.querySelector('.site-header'); if (headerEl) headerEl.style.right = ''; } catch (e) { }
+                        try { const greet = document.getElementById('siteGreeting'); if (greet) greet.style.right = '6px'; } catch (e) { }
+                    } else {
+                        try { document.querySelector('.main-content').style.marginRight = w + 'px'; } catch (e) { }
+                        if (headerInner) headerInner.style.marginRight = w + 'px';
+                        try { const headerEl = document.querySelector('.site-header'); if (headerEl) headerEl.style.right = w + 'px'; } catch (e) { }
+                        // keep greeting fixed at extreme right; do not offset by sidebar width
+                        try { const greet = document.getElementById('siteGreeting'); if (greet) greet.style.right = '6px'; } catch (e) { }
+                    }
+                });
+
+                let dragging = false;
+                let startX = 0;
+                let startW = 0;
+
+                let activePointerId = null;
+                // Hover handlers: change cursor when pointer is near the inner edge
+                function onHoverMove(e) {
+                    try {
+                        if (window.innerWidth <= 1024) { sidebar.style.cursor = ''; return; }
+                        const clientX = (e.touches ? e.touches[0].clientX : (e.clientX || 0));
+                        const rect = sidebar.getBoundingClientRect();
+                        const distFromLeft = clientX - rect.left;
+                        if (distFromLeft >= 0 && distFromLeft <= EDGE_THRESHOLD) {
+                            sidebar.style.cursor = 'col-resize';
+                        } else {
+                            // don't override cursor while actively dragging
+                            if (!dragging) sidebar.style.cursor = '';
+                        }
+                    } catch (err) { }
+                }
+
+                function onHoverLeave() {
+                    try { if (!dragging) sidebar.style.cursor = ''; } catch (e) { }
+                }
+                // Start dragging when user presses near the sidebar inner edge (no visible handle)
+                function onDown(e) {
+                    if (window.innerWidth <= 1024) return;
+                    // determine pointer X
+                    const clientX = (e.touches ? e.touches[0].clientX : (e.clientX || 0));
+                    // check distance from the sidebar's left edge (inner edge for right sidebar)
+                    try {
+                        const rect = sidebar.getBoundingClientRect();
+                        const distFromLeft = clientX - rect.left; // how far inside the sidebar the pointer is
+                        const EDGE_THRESHOLD = 20; // pixels from the inner edge where drag is allowed
+                        if (distFromLeft > EDGE_THRESHOLD) {
+                            // not near the inner edge; ignore - user is likely interacting with sidebar content
+                            return;
+                        }
+                    } catch (err) { /* if bounding fails, continue */ }
+
+                    // prevent text selection
+                    try{ e.preventDefault(); }catch(err){}
+                    dragging = true;
+                    startX = clientX;
+                    startW = parseInt(sidebar.style.width, 10) || DEFAULT_WIDTH;
+                    try { console.debug('sidebar-edge:onDown', { type: e.type, pointerId: e.pointerId, startX: startX, startW: startW }); } catch (err) { }
+                    document.body.style.userSelect = 'none';
+                    // if pointer event, capture it on the sidebar so we continue receiving moves outside target
+                    try{ if(e.pointerId && sidebar.setPointerCapture) { sidebar.setPointerCapture(e.pointerId); activePointerId = e.pointerId; } }catch(err){}
+                }
+
+                function onMove(e) {
+                    if (!dragging) return;
+                    const clientX = (e.touches ? e.touches[0].clientX : (e.clientX || 0));
+                    // Use relative delta from start to make dragging direction intuitive
+                    const dx = startX - clientX; // positive when moving left
+                    const newW = startW + dx; // increase width when dragging left
+                    try { console.debug('resizer:onMove', { clientX: clientX, dx: dx, newW: newW }); } catch (err) { }
+                    applyWidth(newW);
+                }
+
+                function onUp(e) {
+                    if (!dragging) return;
+                    dragging = false;
+                    document.body.style.userSelect = '';
+                    // release pointer capture if used
+                    try{ if(activePointerId && sidebar.releasePointerCapture) { sidebar.releasePointerCapture(activePointerId); activePointerId = null; } }catch(err){}
+                    // persist
+                    try { localStorage.setItem(STORAGE_KEY, String(parseInt(sidebar.style.width, 10) || DEFAULT_WIDTH)); } catch (e) { }
+                }
+
+                // Support Pointer events (recommended) and fallback to mouse/touch
+                if(window.PointerEvent){
+                    // listen for pointerdown on the sidebar edge instead of a separate handle
+                    sidebar.addEventListener('pointerdown', onDown);
+                    sidebar.addEventListener('pointermove', onHoverMove);
+                    sidebar.addEventListener('pointerleave', onHoverLeave);
+                    window.addEventListener('pointermove', onMove);
+                    window.addEventListener('pointerup', onUp);
+                    window.addEventListener('pointercancel', onUp);
+                } else {
+                    sidebar.addEventListener('mousedown', onDown);
+                    sidebar.addEventListener('mousemove', onHoverMove);
+                    sidebar.addEventListener('mouseleave', onHoverLeave);
+                    sidebar.addEventListener('touchstart', onDown, { passive: false });
+                    window.addEventListener('mousemove', onMove);
+                    window.addEventListener('touchmove', onMove, { passive: false });
+                    window.addEventListener('mouseup', onUp);
+                    window.addEventListener('touchend', onUp);
+                }
+
+                // double-click on sidebar to reset
+                try { sidebar.addEventListener('dblclick', function () { applyWidth(DEFAULT_WIDTH); try { localStorage.setItem(STORAGE_KEY, String(DEFAULT_WIDTH)); } catch (e) { } }); } catch (e) { }
+                // populate dropdown on load and when Firebase is ready
+                try {
+                    document.addEventListener('DOMContentLoaded', populateDropdown);
+                    if (window.FirebaseReady) window.FirebaseReady.then(populateDropdown).catch(() => { });
+                } catch (e) { }
+            } catch (e) { console.warn('sidebar resizer init failed', e); }
+        })();
+    </script>
+    <script>
+        function toggleTheme() {
+            try {
+                var root = document.documentElement;
+                var current = null;
+                try { current = localStorage.getItem('theme'); } catch (e) { current = root.getAttribute('data-theme') || 'light'; }
+                var next = (current === 'dark') ? 'light' : 'dark';
+                try { localStorage.setItem('theme', next); } catch (e) { }
+                root.setAttribute('data-theme', next);
+                updateThemeToggleUI(next);
+                try { window.dispatchEvent(new Event('storage')); } catch (e) { }
+            } catch (e) { console.warn('toggleTheme error', e); }
+        }
+        function updateThemeToggleUI(theme) {
+            try {
+                var icon = document.getElementById('themeToggleIcon');
+                var text = document.getElementById('themeToggleText');
+                // update theme toggle icon/text (if present)
+                if (icon && text) {
+                    if (theme === 'dark') {
+                        icon.className = 'fas fa-sun';
+                        text.textContent = 'نهاري';
+                    } else {
+                        icon.className = 'fas fa-moon';
+                        text.textContent = 'ليلي';
+                    }
+                }
+                // note: greeting icon is determined by local time (not the theme)
+            } catch (e) { }
+        }
+        try {
+            var __t = null; try { __t = localStorage.getItem('theme'); } catch (e) { }; if (!__t) __t = document.documentElement.getAttribute('data-theme') || 'light'; updateThemeToggleUI(__t);
+            window.addEventListener('DOMContentLoaded', function () { var t = null; try { t = localStorage.getItem('theme'); } catch (e) { }; if (!t) t = document.documentElement.getAttribute('data-theme') || 'light'; updateThemeToggleUI(t); });
+        } catch (e) { }
+    </script>
+    <script>
+        // Attach safe image fallback handlers for avatars (avoids inline onerror quoting issues)
+        document.addEventListener('DOMContentLoaded', function () {
+            try {
+                var fallback = "{{ url_for('static', filename='images/BImg.jpg') }}";
+                function attachFallback(id) {
+                    try {
+                        var img = document.getElementById(id);
+                        if (!img) return;
+                        img.addEventListener('error', function () { try { this.onerror = null; this.src = fallback; } catch (e) { } });
+                    } catch (e) { }
+                }
+                attachFallback('headerAvatarImg');
+                attachFallback('dropdownAvatarImg');
+            } catch (e) { console.warn('avatar fallback attach failed', e); }
+        });
+    </script>
+    <script>
+        // Register service worker for PWA
+        try {
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function () {
+                    navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+                        .then(function (reg) { console.info('ServiceWorker registered:', reg.scope); })
+                        .catch(function (err) { console.warn('ServiceWorker register failed', err); });
+                });
+            }
+        } catch (e) { console.warn('SW registration error', e); }
+    </script>
+    <script>
+        // beforeinstallprompt handler: show custom install banner and use deferred prompt
+        (function () {
+            let deferredPrompt = null;
+            const banner = document.getElementById('installBanner');
+            const installBtn = document.getElementById('installBtn');
+            const dismissBtn = document.getElementById('installDismiss');
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                try {
+                    e.preventDefault();
+                    deferredPrompt = e;
+                    if (banner) banner.style.display = 'block';
+                } catch (err) { }
+            });
+
+            if (installBtn) installBtn.addEventListener('click', async function () {
+                try {
+                    if (!deferredPrompt) return;
+                    deferredPrompt.prompt();
+                    const choice = await deferredPrompt.userChoice;
+                    if (choice && choice.outcome === 'accepted') {
+                        try { showToast('تم التثبيت', 'success'); } catch (e) { }
+                    } else {
+                        try { showToast('تم إلغاء التثبيت', 'warning'); } catch (e) { }
+                    }
+                    deferredPrompt = null;
+                    if (banner) banner.style.display = 'none';
+                } catch (err) { console.warn('install prompt failed', err); }
+            });
+
+            if (dismissBtn) dismissBtn.addEventListener('click', function () { if (banner) banner.style.display = 'none'; });
+
+            // update meta theme-color whenever theme toggles
+            function setThemeMeta(color) {
+                try {
+                    let meta = document.querySelector('meta[name="theme-color"]');
+                    if (!meta) {
+                        meta = document.createElement('meta');
+                        meta.name = 'theme-color';
+                        document.head.appendChild(meta);
+                    }
+                    meta.content = color;
+                } catch (e) { }
+            }
+
+            // hook into existing theme toggle helper if present
+            try {
+                const oldUpdate = window.updateThemeToggleUI;
+                window.updateThemeToggleUI = function (theme) {
+                    try {
+                        if (typeof oldUpdate === 'function') oldUpdate(theme);
+                    } catch (e) { }
+                    try {
+                        // pick colors matching our CSS theme vars
+                        if (theme === 'dark') setThemeMeta('#0f1724'); else setThemeMeta('#ffffff');
+                    } catch (e) { }
+                };
+            } catch (e) { }
+        })();
+    </script>
+    <script>
+        // Floating sidebar tooltip (shows outside collapsed sidebar)
+        (function () {
+            try {
+                var sidebar = document.getElementById('sidebar');
+                if (!sidebar) return;
+
+                // create tooltip element once
+                var st = document.createElement('div');
+                st.className = 'sidebar-tooltip';
+                document.body.appendChild(st);
+
+                var showTimer = null;
+
+                function showTooltipFor(anchor) {
+                    try {
+                        if (!sidebar.classList.contains('icons-only')) return;
+                        var span = anchor.querySelector('span');
+                        var text = span ? span.textContent.trim() : (anchor.getAttribute('aria-label') || '');
+                        if (!text) return;
+                        st.textContent = text;
+                        st.classList.remove('show');
+                        st.style.display = 'block';
+                        // temporarily make visible off-screen to measure
+                        st.style.left = '-9999px';
+                        st.style.top = '0px';
+                        // allow browser to render then measure
+                        requestAnimationFrame(function () {
+                            var rect = anchor.getBoundingClientRect();
+                            var tw = st.offsetWidth;
+                            // place tooltip to the left of the sidebar anchor
+                            var left = rect.left - tw - 12; // 12px gap
+                            // clamp so it doesn't go off-screen
+                            if (left < 8) left = 8;
+                            var top = rect.top + (rect.height / 2);
+                            st.style.left = left + 'px';
+                            st.style.top = top + 'px';
+                            // match current theme
+                            if (document.documentElement.getAttribute('data-theme') === 'dark') st.classList.add('dark'); else st.classList.remove('dark');
+                            requestAnimationFrame(function () { st.classList.add('show'); });
+                        });
+                    } catch (e) { }
+                }
+
+                function hideTooltip() {
+                    try { st.classList.remove('show'); } catch (e) { }
+                    // hide after transition
+                    clearTimeout(showTimer);
+                    showTimer = setTimeout(function () { try { st.style.display = 'none'; } catch (e) { } }, 180);
+                }
+
+                // attach handlers to links
+                function attach() {
+                    try {
+                        var links = sidebar.querySelectorAll('.sidebar-menu a');
+                        links.forEach(function (a) {
+                            a.addEventListener('mouseenter', function () { showTooltipFor(a); });
+                            a.addEventListener('mouseleave', function () { hideTooltip(); });
+                            a.addEventListener('focus', function () { showTooltipFor(a); });
+                            a.addEventListener('blur', function () { hideTooltip(); });
+                            // support simple touch: show briefly on touchstart
+                            a.addEventListener('touchstart', function (ev) { showTooltipFor(a); setTimeout(hideTooltip, 1200); }, { passive: true });
+                        });
+                    } catch (e) { }
+                }
+
+                // initialize on DOMContentLoaded and when the sidebar width changes (mutation observer)
+                document.addEventListener('DOMContentLoaded', attach);
+
+                // also observe class changes on sidebar to reattach if needed
+                try {
+                    var mo = new MutationObserver(function (mut) { attach(); });
+                    mo.observe(sidebar, { attributes: true, attributeFilter: ['class'] });
+                } catch (e) { }
+            } catch (e) { console.warn('sidebar tooltip init failed', e); }
+        })();
+    </script>
+    </body>
+
+</html>

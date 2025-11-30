@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>{% block title %}SA System{% endblock %}</title>
+    <script>
+        try {
+            var __savedTheme = null;
+            try { __savedTheme = localStorage.getItem('theme'); } catch(e) { __savedTheme = null; }
+            if (!__savedTheme) __savedTheme = 'light';
+            document.documentElement.setAttribute('data-theme', __savedTheme);
+        } catch(e) {}
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="{{ url_for('static', filename='js/xlsx.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/helpers.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/router.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/forms.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/storage.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/firebase_init.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/login.js') }}"></script>
+</head>
+<body>
+    <div id="toast-root">
+        <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+    </div>
+    <!-- Site Header (guest layout) -->
+    <header class="site-header" role="banner">
+        <div class="greeting" id="siteGreeting">مرحبا</div>
+    </header>
+
+    <script>
+        // global showToast helper: message, type = 'success'|'error'|'warning', duration in ms
+        window.showToast = function(message, type='success', duration=2000){
+            try{
+                const container = document.getElementById('toastContainer');
+                if(!container) return;
+                const t = document.createElement('div');
+                t.className = 'toast ' + (type || 'success');
+                t.innerHTML = `<div class="toast-message">${String(message)}</div>`;
+                container.appendChild(t);
+                // allow CSS transition
+                requestAnimationFrame(()=> t.classList.add('show'));
+                setTimeout(()=>{
+                    t.classList.remove('show');
+                    setTimeout(()=>{ try{ container.removeChild(t); }catch(e){} }, 220);
+                }, duration || 2000);
+            }catch(e){ console.warn('showToast error', e); }
+        };
+    </script>
+    {% block content %}{% endblock %}
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

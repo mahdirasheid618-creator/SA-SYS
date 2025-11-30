@@ -1,0 +1,17 @@
+{
+  "name": "نظام SA System",
+  "short_name": "SA SYSTEM",
+  "lang": "ar",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#2c8fce",
+  "icons": [
+    { "src": "/static/images/tech-64x64.png", "sizes": "64x64", "type": "image/png" },
+    { "src": "/static/images/tech-128x128.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "/static/images/tech-256x256.png", "sizes": "256x256", "type": "image/png" },
+    { "src": "/static/images/tech-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

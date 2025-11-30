@@ -1,0 +1,161 @@
+{% extends "layout.html" %}
+{% block title %}الأساتذة والتدريسيين - نظام إدارة الطلاب{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>
+        <i class="fas fa-chalkboard-user"></i> الأساتذة والتدريسيين
+    </h1>
+</div>
+<div class="card">
+    <div class="card-header">
+        <h2>قائمة الأساتذة والتدريسيين</h2>
+    </div>
+    <div class="card-body">
+        <div class="toolbar" style="justify-content:space-between; margin-bottom:16px;">
+            <div>
+                <a href="{{ url_for('add_instructor') }}" class="btn btn-primary btn-small btn-add"><i class="fas fa-plus"></i> إضافة أستاذ</a>
+                <button class="btn btn-secondary btn-small" onclick="refreshInstructors()"><i class="fas fa-sync"></i> تحديث</button>
+            </div>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="instructorSearch" class="form-control" placeholder="ابحث عن أستاذ..." onkeyup="filterInstructors()">
+            </div>
+        </div>
+        <div class="table-wrapper">
+            <table class="table" id="instructorsTable">
+                <thead>
+                    <tr>
+                        <th>التسلسل</th>
+                        <th>الاسم</th>
+                        <th>اللقب الوظيفي</th>
+                        <th>الشهادة</th>
+                        <th>القسم</th>
+                        <th>اسم المستخدم</th>
+                        <th>البريد الجامعي</th>
+                        <th>رقم الهاتف</th>
+                        <th>الصورة</th>
+                        <th>تاريخ الإضافة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="instructorsTableBody">
+                    <tr><td colspan="11" style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<div id="deleteModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; z-index:2000;">
+    <div style="background:#fff; max-width:520px; width:92%; border-radius:10px; padding:18px; box-shadow:0 12px 40px rgba(0,0,0,0.18);">
+        <div style="display:flex; gap:12px; align-items:center;">
+            <div style="width:60px; height:60px; border-radius:50%; background:linear-gradient(90deg,#f46b45, #eea849); display:flex; align-items:center; justify-content:center; color:#fff; font-size:24px;">
+                <i class="fas fa-trash-alt"></i>
+            </div>
+            <div style="flex:1;">
+                <h3 style="margin:0 0 6px 0;">تأكيد الحذف</h3>
+                <p id="deleteModalText" style="margin:0; color:#555;">هل أنت متأكد أنك تريد حذف هذا الأستاذ؟ هذه العملية لا يمكن التراجع عنها.</p>
+            </div>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px;">
+            <button class="btn btn-secondary" onclick="hideDeleteModal()">إلغاء</button>
+            <button id="confirmDeleteBtn" class="btn btn-danger">حذف نهائي</button>
+        </div>
+    </div>
+</div>
+<script>
+    let allInstructors = [];
+    let currentPage = 1;
+    const itemsPerPage = 10;
+    function initInstructors(){
+        if (window.FirebaseAPI && window.FirebaseAPI.subscribeInstructors) {
+            console.log('initInstructors: subscribing to instructors');
+            window.FirebaseAPI.subscribeInstructors(function(instructors){
+                allInstructors = instructors.map(i => ({ id: i.id, ...i }));
+                renderInstructors(1);
+            });
+        } else {
+            fetch('/api/instructors')
+                .then(r => r.json()).then(data=>{ if(data.success) { allInstructors = data.instructors; renderInstructors(1);} });
+        }
+    }
+    document.addEventListener('DOMContentLoaded', function(){
+        if (window.FirebaseReady && typeof window.FirebaseReady.then === 'function') {
+            window.FirebaseReady.then(()=> initInstructors()).catch(()=> initInstructors());
+        } else {
+            initInstructors();
+        }
+    });
+    function renderInstructors(page){
+        const start = (page-1)*itemsPerPage;
+        const end = start + itemsPerPage;
+        const body = document.getElementById('instructorsTableBody');
+        const pageData = allInstructors.slice(start, end);
+        // determine auth role and permissions
+        let isSupervisor = false;
+        let permissions = 'full';
+        try{
+            const raw = localStorage.getItem('auth_user');
+            if(raw){ const auth = JSON.parse(raw); isSupervisor = auth && auth.user_type === 'supervisor'; permissions = auth && auth.permissions ? auth.permissions : 'full'; }
+        }catch(e){}
+        if (!pageData.length) {
+            body.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;">لا توجد بيانات</td></tr>';
+            return;
+        }
+        body.innerHTML = pageData.map((i, idx)=>{
+            const createdDate = i.created_at && i.created_at.toDate ? new Date(i.created_at.toDate()).toLocaleString('ar-EG') : (i.created_at || '-');
+            const photo = i.photo ? '<i class="fas fa-image" style="color:#2ecc71;"></i>' : '-';
+            // Render edit and delete buttons (delete enabled for all users)
+            const actions = `
+                        <div class="table-actions">
+                            <button class="btn btn-secondary btn-small" onclick="editInstructor('${i.id}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-danger btn-small delete-btn" onclick="deleteInstructor('${i.id}')"><i class="fas fa-trash"></i></button>
+                        </div>`;
+            return `
+                <tr>
+                    <td>${start+idx+1}</td>
+                    <td>${i.name || '-'}</td>
+                    <td>${i.job_title || '-'}</td>
+                    <td>${i.degree || '-'}</td>
+                    <td>${i.department || '-'}</td>
+                    <td>${i.username || '-'}</td>
+                    <td>${i.emailunivers || i.Email || i.email || '-'}</td>
+                    <td>${i.phone || '-'}</td>
+                    <td>${photo}</td>
+                    <td>${createdDate}</td>
+                    <td>${actions}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+    function filterInstructors(){
+        const v = document.getElementById('instructorSearch').value.toLowerCase();
+        document.querySelectorAll('#instructorsTableBody tr').forEach(tr=>{ tr.style.display = tr.textContent.toLowerCase().includes(v)?'':'none'; });
+    }
+    function refreshInstructors(){ initInstructors(); }
+    function editInstructor(id){
+        // use app router when available to preserve SPA navigation
+        try{ if (typeof RouteHandler !== 'undefined' && RouteHandler && typeof RouteHandler.navigateTo === 'function') { RouteHandler.navigateTo(`/add_instructor?id=${encodeURIComponent(id)}`); return; } }catch(e){}
+        // fallback to full redirect
+        window.location.href = `/add_instructor?id=${encodeURIComponent(id)}`;
+    }
+    let _pendingDeleteId = null;
+    function deleteInstructor(id){
+        _pendingDeleteId = id;
+        document.getElementById('deleteModal').style.display = 'flex';
+        const btn = document.getElementById('confirmDeleteBtn');
+        btn.onclick = function(){
+            btn.disabled = true;
+            if (window.FirebaseAPI && window.FirebaseAPI.deleteInstructor) {
+                window.FirebaseAPI.deleteInstructor(_pendingDeleteId).then(()=>{
+                    btn.disabled = false;
+                    hideDeleteModal();
+                    initInstructors();
+                }).catch(err=>{ btn.disabled = false; hideDeleteModal(); alert('فشل الحذف'); console.error(err); });
+            } else {
+                fetch(`/api/delete-instructor/${_pendingDeleteId}`, { method:'DELETE' }).then(r=>r.json()).then(j=>{ hideDeleteModal(); initInstructors(); }).catch(err=>{ hideDeleteModal(); alert('فشل الحذف'); console.error(err); });
+            }
+        };
+    }
+    function hideDeleteModal(){ document.getElementById('deleteModal').style.display='none'; _pendingDeleteId=null; }
+</script>
+{% endblock %}

@@ -1,0 +1,325 @@
+{% extends "layout.html" %}
+{% block title %}إضافة/تعديل أستاذ - نظام إدارة الطلاب{% endblock %}
+{% block content %}
+<div class="page-header">
+    <a href="{{ url_for('instructors') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-right"></i> رجوع
+    </a>
+    <h1>
+        <i class="fas fa-chalkboard-user"></i> إضافة / تعديل أستاذ
+    </h1>
+</div>
+<div class="card">
+    <div class="card-body">
+        <form id="addInstructorForm" onsubmit="handleAddInstructor(event)">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                    <label for="name">الاسم *</label>
+                    <input id="name" name="name" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label for="jobTitle">اللقب الوظيفي *</label>
+                    <input id="jobTitle" name="job_title" class="form-control" required />
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="degree">الشهادة (اختياري)</label>
+                <input id="degree" name="degree" class="form-control" placeholder="مثال: دكتوراه، ماجستير..." />
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                    <label for="department">القسم *</label>
+                    <select id="department" name="department" class="form-control" required>
+                        <option value="">-- اختر القسم --</option>
+                        <option value="علوم الحاسوب">علوم الحاسوب</option>
+                        <option value="البرمجيات">البرمجيات</option>
+                        <option value="الامن السيبراني">الامن السيبراني</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="username">اسم المستخدم *</label>
+                    <input id="username" name="username" class="form-control" required />
+                </div>
+                <div class="form-group">
+                    <label for="emailUnivers">البريد الجامعي *</label>
+                    <input id="emailUnivers" name="emailunivers" type="email" class="form-control" required
+                        placeholder="example@university.com أو example@university.edu" />
+                    <small style="color:#888;">يجب أن ينتهي بـ <code>.com</code> أو <code>.edu</code></small>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                    <label for="phone">رقم الهاتف</label>
+                    <input id="phone" name="phone" class="form-control" />
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label for="password">كلمة المرور <span id="passwordRequired">*</span></label>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <input id="password" name="password" type="password" class="form-control" />
+                            <button type="button" class="btn btn-secondary" style="padding:8px 12px;"
+                                onclick="togglePasswordVisibility()" title="إظهار/إخفاء كلمة المرور">
+                                <i class="fas fa-eye" id="togglePasswordIcon"></i>
+                            </button>
+                        </div>
+                        <small style="color:#888; margin-top:4px;" id="passwordHint">اتركها فارغة إذا لم تريد تغيير كلمة
+                            المرور</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="passwordConfirm">تأكيد كلمة المرور <span
+                                id="passwordConfirmRequired">*</span></label>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <input id="passwordConfirm" name="password_confirm" type="password" class="form-control" />
+                            <button type="button" class="btn btn-secondary" style="padding:8px 12px;"
+                                onclick="togglePasswordConfirmVisibility()" title="إظهار/إخفاء كلمة المرور">
+                                <i class="fas fa-eye" id="togglePasswordConfirmIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>صورة الأستاذ (اختياري - اسحب وأسقط أو انقر للاختيار)</label>
+                    <div id="dropZone"
+                        style="border:2px dashed #2ecc71; border-radius:8px; padding:30px; text-align:center; cursor:pointer; transition:0.2s ease; background:#f9f9f9;">
+                        <i class="fas fa-cloud-upload-alt"
+                            style="font-size:32px; color:#2ecc71; margin-bottom:12px;"></i>
+                        <p style="margin:8px 0;">اسحب الصورة هنا أو انقر للاختيار</p>
+                        <p style="margin:0; color:#888; font-size:12px;">صيغ مقبولة: JPG, PNG, GIF</p>
+                    </div>
+                    <input id="photoInput" name="photo" type="file" accept="image/*" style="display:none;" />
+                    <input type="hidden" id="photoData" name="photo_data" />
+                    <div id="photoPreview" style="display:none; margin-top:12px; text-align:center;">
+                        <img id="photoImg"
+                            style="max-width:200px; max-height:200px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1);" />
+                        <div style="margin-top:8px;">
+                            <button type="button" class="btn btn-secondary btn-small" onclick="clearPhotoPreview()">
+                                <i class="fas fa-times"></i> مسح الصورة
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button class="btn btn-success" type="submit" id="saveBtn">حفظ</button>
+                    <a href="{{ url_for('instructors') }}" class="btn btn-secondary">إلغاء</a>
+                </div>
+                <div id="saveSuccess" class="alert alert-success" style="display:none; margin-top:12px;">
+                    تم الحفظ بنجاح.
+                </div>
+                <div id="saveError" class="alert alert-danger" style="display:none; margin-top:12px;">
+                    <span id="saveErrorText">حدث خطأ أثناء الحفظ.</span>
+                </div>
+        </form>
+    </div>
+</div>
+<script>
+    function getQueryParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+    }
+    function togglePasswordVisibility() {
+        const pwd = document.getElementById('password');
+        const icon = document.getElementById('togglePasswordIcon');
+        if (pwd.type === 'password') {
+            pwd.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            pwd.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+    function togglePasswordConfirmVisibility() {
+        const pwd = document.getElementById('passwordConfirm');
+        const icon = document.getElementById('togglePasswordConfirmIcon');
+        if (pwd.type === 'password') {
+            pwd.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            pwd.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+    // Drag and drop handlers
+    function setupDragAndDrop() {
+        const dropZone = document.getElementById('dropZone');
+        const photoInput = document.getElementById('photoInput');
+        dropZone.addEventListener('click', () => photoInput.click());
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.background = '#e8f8f5';
+            dropZone.style.borderColor = '#1abc9c';
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.background = '#f9f9f9';
+            dropZone.style.borderColor = '#2ecc71';
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.background = '#f9f9f9';
+            dropZone.style.borderColor = '#2ecc71';
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handlePhotoSelect(files[0]);
+            }
+        });
+        photoInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handlePhotoSelect(e.target.files[0]);
+            }
+        });
+    }
+    function handlePhotoSelect(file) {
+        if (!file.type.startsWith('image/')) {
+            alert('يرجى اختيار صورة');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const base64 = e.target.result;
+            document.getElementById('photoData').value = base64;
+            document.getElementById('photoImg').src = base64;
+            document.getElementById('photoPreview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+    function clearPhotoPreview() {
+        document.getElementById('photoData').value = '';
+        document.getElementById('photoInput').value = '';
+        document.getElementById('photoPreview').style.display = 'none';
+    }
+    let editingId = null;
+    document.addEventListener('DOMContentLoaded', function () {
+        setupDragAndDrop();
+        const id = getQueryParam('id');
+        if (id && window.FirebaseReady) {
+            window.FirebaseReady.then(api => {
+                if (api.getInstructor) {
+                    editingId = id;
+                    // Mark as edit mode - password optional
+                    document.getElementById('passwordRequired').textContent = '';
+                    document.getElementById('passwordConfirmRequired').textContent = '';
+                    document.getElementById('passwordHint').style.display = 'block';
+                    api.getInstructor(id).then(i => {
+                        if (!i) {
+                            document.getElementById('saveError').style.display = 'block';
+                            document.getElementById('saveErrorText').textContent = 'لم يتم العثور على بيانات الأستاذ.';
+                            return;
+                        }
+                        try { document.getElementById('name').value = i.name || i.full_name || i.FullName || ''; } catch(e){}
+                        try { document.getElementById('jobTitle').value = i.job_title || i.jobTitle || i.title || ''; } catch(e){}
+                        try { document.getElementById('degree').value = i.degree || i.Degree || ''; } catch(e){}
+                        try { document.getElementById('department').value = i.department || i.Department || ''; } catch(e){}
+                        try { document.getElementById('username').value = i.username || i.Username || ''; } catch(e){}
+                        try { document.getElementById('phone').value = i.phone || i.PhoneNumber || ''; } catch(e){}
+                        // For edit mode, prefill password fields with placeholder
+                        try {
+                            if (i.password) {
+                                document.getElementById('password').value = i.password || '';
+                                document.getElementById('passwordConfirm').value = i.password || '';
+                            }
+                        } catch(e){}
+                        // Load photo if exists
+                        try {
+                            if (i.photo) {
+                                document.getElementById('photoData').value = i.photo;
+                                document.getElementById('photoImg').src = i.photo;
+                                document.getElementById('photoPreview').style.display = 'block';
+                            }
+                        } catch(e){}
+                        // populate university email if present
+                        try { document.getElementById('emailUnivers').value = i.emailunivers || i.Email || i.email || ''; } catch (e) { }
+                    }).catch(err => {
+                        document.getElementById('saveError').style.display = 'block';
+                        document.getElementById('saveErrorText').textContent = 'فشل جلب بيانات الأستاذ.';
+                        console.error('getInstructor failed', err);
+                    });
+                }
+            }).catch(() => { });
+        } else {
+            // New entry - password required
+            document.getElementById('passwordRequired').textContent = '*';
+            document.getElementById('passwordConfirmRequired').textContent = '*';
+            document.getElementById('password').required = true;
+            document.getElementById('passwordConfirm').required = true;
+            document.getElementById('passwordHint').style.display = 'none';
+        }
+    });
+    function handleAddInstructor(e) {
+        e.preventDefault();
+        const pwd = document.getElementById('password').value;
+        const pwdConfirm = document.getElementById('passwordConfirm').value;
+        // For new entries, password is required
+        if (!editingId && (!pwd || !pwdConfirm)) {
+            document.getElementById('saveError').style.display = 'block';
+            document.getElementById('saveErrorText').textContent = 'كلمة المرور وتأكيدها مطلوبة';
+            return;
+        }
+        // For edit entries, if password provided, it must match confirmation
+        if (editingId && pwd && pwd !== pwdConfirm) {
+            document.getElementById('saveError').style.display = 'block';
+            document.getElementById('saveErrorText').textContent = 'كلمات المرور غير متطابقة';
+            return;
+        }
+        // If editing and no new password provided, use existing
+        let finalPassword = pwd;
+        if (editingId && !pwd) {
+            // Password not changed - will not update it
+            finalPassword = null;
+        }
+        if (pwd && pwd !== pwdConfirm) {
+            document.getElementById('saveError').style.display = 'block';
+            document.getElementById('saveErrorText').textContent = 'كلمات المرور غير متطابقة';
+            return;
+        }
+        const data = {
+            name: document.getElementById('name').value,
+            job_title: document.getElementById('jobTitle').value,
+            degree: document.getElementById('degree').value || null,
+            department: document.getElementById('department').value,
+            username: document.getElementById('username').value,
+            emailunivers: document.getElementById('emailUnivers').value,
+            phone: document.getElementById('phone').value || '',
+            photo: document.getElementById('photoData').value || null
+        };
+        // validate university email ends with .com or .edu
+        try {
+            const ev = (data.emailunivers || '').toString().trim().toLowerCase();
+            if (!ev || !/^[^@\s]+@[^@\s]+\.(com|edu)$/.test(ev)) {
+                document.getElementById('saveError').style.display = 'block';
+                document.getElementById('saveErrorText').textContent = 'الرجاء إدخال بريد جامعي صحيح ينتهي بـ .com أو .edu';
+                return;
+            }
+        } catch (e) { }
+        if (finalPassword) {
+            data.password = finalPassword;
+        }
+        if (editingId && window.FirebaseAPI && window.FirebaseAPI.updateInstructor) {
+            // include emailunivers field for firebase
+            const upd = Object.assign({}, data);
+            if (upd.emailunivers) { upd.email = upd.emailunivers; upd.Email = upd.emailunivers; }
+            window.FirebaseAPI.updateInstructor(editingId, upd).then(() => {
+                document.getElementById('saveSuccess').style.display = 'block';
+                setTimeout(() => { window.location.href = '{{ url_for("instructors") }}'; }, 900);
+            }).catch(err => { console.error(err); document.getElementById('saveError').style.display = 'block'; });
+            return;
+        }
+        if (window.FirebaseAPI && window.FirebaseAPI.addInstructor) {
+            const payload = Object.assign({}, data, { password: finalPassword || pwd });
+            if (payload.emailunivers) { payload.email = payload.emailunivers; payload.Email = payload.emailunivers; }
+            window.FirebaseAPI.addInstructor(payload).then(id => {
+                document.getElementById('saveSuccess').style.display = 'block';
+                setTimeout(() => { window.location.href = '{{ url_for("instructors") }}'; }, 900);
+            }).catch(err => { console.error(err); document.getElementById('saveError').style.display = 'block'; });
+            return;
+        }
+        // fallback to server
+        fetch('/api/add-instructor', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...data, password: finalPassword || pwd }) })
+            .then(r => r.json()).then(j => {
+                if (j.success) { document.getElementById('saveSuccess').style.display = 'block'; setTimeout(() => { window.location.href = '{{ url_for("instructors") }}'; }, 900); } else { document.getElementById('saveError').style.display = 'block'; }
+            }).catch(err => { console.error(err); document.getElementById('saveError').style.display = 'block'; });
+    }
+</script>
+{% endblock %}
