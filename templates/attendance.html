@@ -82,15 +82,19 @@
     let allAttendanceData = [];
     let currentTab = 'today';
     document.addEventListener('DOMContentLoaded', function() {
-        // إخفاء أزرار الإضافة والتعديل والحذف للمشرف
+        // hide add/edit/delete only if supervisor has limited permissions
         try {
             let isSupervisor = false;
+            let permissions = 'full';
             try {
-                const auth = JSON.parse(localStorage.getItem('auth_user'));
-                isSupervisor = auth && auth.user_type === 'supervisor';
+                const raw = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user');
+                const auth = raw ? JSON.parse(raw) : null;
+                isSupervisor = auth && (auth.user_type === 'supervisor' || auth.role === 'supervisor');
+                permissions = auth && auth.permissions ? auth.permissions : (auth && auth.permission ? auth.permission : 'full');
             } catch(e) {}
-            
-            if(isSupervisor) {
+            const supervisorLimited = isSupervisor && String(permissions).toLowerCase() !== 'full';
+
+            if(supervisorLimited) {
                 const addBtn = document.getElementById('addAttendanceBtn');
                 const editBtn = document.getElementById('editAttendanceBtn');
                 const deleteBtn = document.getElementById('deleteAttendanceBtn');
@@ -189,12 +193,16 @@
             return;
         }
         
-        // Check if user is supervisor
+        // Check if user is supervisor with limited permissions
         let isSupervisor = false;
+        let permissions = 'full';
         try {
-            const auth = JSON.parse(localStorage.getItem('auth_user'));
-            isSupervisor = auth && auth.user_type === 'supervisor';
+            const raw = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user');
+            const auth = raw ? JSON.parse(raw) : null;
+            isSupervisor = auth && (auth.user_type === 'supervisor' || auth.role === 'supervisor');
+            permissions = auth && auth.permissions ? auth.permissions : (auth && auth.permission ? auth.permission : 'full');
         } catch(e) {}
+        const supervisorLimited = isSupervisor && String(permissions).toLowerCase() !== 'full';
         
         tbody.innerHTML = data.map((record, index) => `
             <tr>
@@ -208,7 +216,7 @@
                 <td>${record.duration || '-'}</td>
                 <td>
                     <div class="table-actions">
-                        ${isSupervisor ? '<span style="color: #999; font-size: 0.9em;">لا توجد إجراءات</span>' : `
+                        ${supervisorLimited ? '<span style="color: #999; font-size: 0.9em;">لا توجد إجراءات</span>' : `
                             <button class="btn btn-secondary btn-small" onclick="editRecord('${record.id}')">
                                 <i class="fas fa-edit"></i>
                             </button>

@@ -70,20 +70,21 @@ function displayStudents(page) {
     let permissions = 'full';
     let instructorDepartment = null;
     try{
-        const raw = localStorage.getItem('auth_user');
+        const raw = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user');
         if(raw){ 
             const auth = JSON.parse(raw); 
-            isSupervisor = auth && auth.user_type === 'supervisor'; 
-            isInstructor = auth && auth.user_type === 'instructor';
-            instructorDepartment = auth && auth.department ? auth.department : null;
-            permissions = auth && auth.permissions ? auth.permissions : 'full'; 
+            isSupervisor = auth && (auth.user_type === 'supervisor' || auth.role === 'supervisor'); 
+            isInstructor = auth && (auth.user_type === 'instructor' || auth.role === 'instructor');
+            instructorDepartment = auth && (auth.department || auth.dept) ? (auth.department || auth.dept) : null;
+            permissions = auth && auth.permissions ? auth.permissions : (auth && auth.permission ? auth.permission : 'full'); 
         }
     }catch(e){}
     
     // إخفاء زر الإضافة للأستاذ والمشرف
     try{ 
         const addBtn = document.getElementById('addStudentBtn'); 
-        if(addBtn) addBtn.style.display = (isInstructor || isSupervisor) ? 'none' : ''; 
+        // hide add button for instructors or supervisors with limited permissions
+        if(addBtn) addBtn.style.display = (isInstructor || (isSupervisor && String(permissions).toLowerCase() !== 'full')) ? 'none' : ''; 
     }catch(e){}
     
     // تصفية الطلاب حسب القسم للأستاذ
@@ -118,9 +119,10 @@ function displayStudents(page) {
         else if (student.AddedDate) added = new Date(student.AddedDate).toLocaleString('ar-EG');
         const face = student.FaceEncodings ? '[...encodings]' : (student.face_embedding ? '[...encodings]' : '-');
         
-        // إخفاء أزرار التعديل والحذف للأستاذ والمشرف
+        // إخفاء أزرار التعديل والحذف للأستاذ والمشرف ذي صلاحيات محدودة
         let actionsHtml = '';
-        if(isInstructor || isSupervisor) {
+        const supervisorLimited = isSupervisor && String(permissions).toLowerCase() !== 'full';
+        if(isInstructor || supervisorLimited) {
             actionsHtml = '<div class="table-actions"><span style="color: #999;">لا توجد إجراءات</span></div>';
         } else {
             actionsHtml = `

@@ -94,14 +94,14 @@
         let isSupervisor = false;
         let permissions = 'full';
         try{
-            const raw = localStorage.getItem('auth_user');
-            if(raw){ const auth = JSON.parse(raw); isSupervisor = auth && auth.user_type === 'supervisor'; permissions = auth && auth.permissions ? auth.permissions : 'full'; }
+            const raw = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user');
+            if(raw){ const auth = JSON.parse(raw); isSupervisor = auth && (auth.user_type === 'supervisor' || auth.role === 'supervisor'); permissions = auth && auth.permissions ? auth.permissions : (auth && auth.permission ? auth.permission : 'full'); }
         }catch(e){}
-        
-        // إخفاء زر الإضافة للمشرف
+
+        // إخفاء زر الإضافة للمشرف ذي صلاحيات محدودة
         try {
             const addBtn = document.getElementById('addInstructorBtn');
-            if(addBtn) addBtn.style.display = isSupervisor ? 'none' : '';
+            if(addBtn) addBtn.style.display = (isSupervisor && String(permissions).toLowerCase() !== 'full') ? 'none' : '';
         } catch(e) {}
         
         if (!pageData.length) {
@@ -111,9 +111,10 @@
         body.innerHTML = pageData.map((i, idx)=>{
             const createdDate = i.created_at && i.created_at.toDate ? new Date(i.created_at.toDate()).toLocaleString('ar-EG') : (i.created_at || '-');
             const photo = i.photo ? '<i class="fas fa-image" style="color:#2ecc71;"></i>' : '-';
-            // إخفاء أزرار التعديل والحذف للمشرف
+            // إخفاء أزرار التعديل والحذف للمشرف ذي صلاحيات محدودة
             let actions = '';
-            if(isSupervisor) {
+            const supervisorLimited = isSupervisor && String(permissions).toLowerCase() !== 'full';
+            if(supervisorLimited) {
                 actions = '<div class="table-actions"><span style="color: #999;">لا توجد إجراءات</span></div>';
             } else {
                 actions = `
