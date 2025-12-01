@@ -212,3 +212,13 @@
     background: rgba(255,255,255,0.14);
 }
 :root[data-theme="dark"] .sidebar { scrollbar-color: rgba(255,255,255,0.14) transparent; }
+
+/* Hide elements for instructor users - will be shown for supervisors via JS */
+.sidebar-menu li.no-instructor[data-hidden-for-instructor="true"] {
+    display: none !important;
+}
+
+.sidebar-menu li.no-instructor:not([data-hidden-for-instructor="true"]) {
+    display: list-item;
+}
+

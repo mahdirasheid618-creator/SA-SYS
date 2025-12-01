@@ -1,4 +1,5 @@
 var allStudentsData = [];
+var filteredStudentsData = [];
 var currentPage = 1; 
 const itemsPerPage = 30; 
 function initStudents(){
@@ -67,16 +68,39 @@ function displayStudents(page) {
     let isSupervisor = false;
     let isInstructor = false;
     let permissions = 'full';
+    let instructorDepartment = null;
     try{
         const raw = localStorage.getItem('auth_user');
-        if(raw){ const auth = JSON.parse(raw); isSupervisor = auth && auth.user_type === 'supervisor'; isInstructor = auth && auth.user_type === 'instructor'; permissions = auth && auth.permissions ? auth.permissions : 'full'; }
+        if(raw){ 
+            const auth = JSON.parse(raw); 
+            isSupervisor = auth && auth.user_type === 'supervisor'; 
+            isInstructor = auth && auth.user_type === 'instructor';
+            instructorDepartment = auth && auth.department ? auth.department : null;
+            permissions = auth && auth.permissions ? auth.permissions : 'full'; 
+        }
     }catch(e){}
-    // إظهار زر الإضافة والعمود دائماً
-    try{ const addBtn = document.querySelector('.btn-add'); if(addBtn) addBtn.style.display = ''; }catch(e){}
-    try{ const ths = document.querySelectorAll('#studentsTable thead th'); if(ths && ths.length){ ths[ths.length-1].style.display = ''; } }catch(e){}
+    
+    // إخفاء زر الإضافة للأستاذ والمشرف
+    try{ 
+        const addBtn = document.getElementById('addStudentBtn'); 
+        if(addBtn) addBtn.style.display = (isInstructor || isSupervisor) ? 'none' : ''; 
+    }catch(e){}
+    
+    // تصفية الطلاب حسب القسم للأستاذ
+    let filteredData = allStudentsData;
+    if(isInstructor && instructorDepartment) {
+        filteredData = allStudentsData.filter(s => {
+            const studentDept = s.DepartMent || s.department || s.Department || '';
+            return studentDept.toLowerCase() === instructorDepartment.toLowerCase();
+        });
+    }
+    
+    // حفظ البيانات المصفاة مؤقتاً للاستخدام في العرض
+    const displayData = filteredData;
+    filteredStudentsData = filteredData;
     const startIndex = (page - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const pageData = allStudentsData.slice(startIndex, endIndex);
+    const pageData = displayData.slice(startIndex, endIndex);
     const tbody = document.getElementById('studentsTableBody');
     if (pageData.length === 0) {
         tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px;">لا توجد بيانات طلاب</td></tr>';
@@ -93,16 +117,23 @@ function displayStudents(page) {
         else if (student.created_at && student.created_at.toDate) added = new Date(student.created_at.toDate()).toLocaleString('ar-EG');
         else if (student.AddedDate) added = new Date(student.AddedDate).toLocaleString('ar-EG');
         const face = student.FaceEncodings ? '[...encodings]' : (student.face_embedding ? '[...encodings]' : '-');
-        let actionsHtml = `
-            <div class="table-actions">
-                <button class="btn btn-secondary btn-small" onclick="editStudentRecord('${student.id}')">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-danger btn-small delete-btn" onclick="deleteStudentRecord('${student.id}')">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        `;
+        
+        // إخفاء أزرار التعديل والحذف للأستاذ والمشرف
+        let actionsHtml = '';
+        if(isInstructor || isSupervisor) {
+            actionsHtml = '<div class="table-actions"><span style="color: #999;">لا توجد إجراءات</span></div>';
+        } else {
+            actionsHtml = `
+                <div class="table-actions">
+                    <button class="btn btn-secondary btn-small" onclick="editStudentRecord('${student.id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-danger btn-small delete-btn" onclick="deleteStudentRecord('${student.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+        }
         return `
             <tr>
                 <td>${startIndex + index + 1}</td>
@@ -117,12 +148,25 @@ function displayStudents(page) {
             </tr>
         `;
     }).join('');
-    document.getElementById('totalStudents').textContent = allStudentsData.length;
+    document.getElementById('totalStudents').textContent = displayData.length;
     renderTabs();
     renderBottomNav();
 }
 function updatePagination() {
-    const totalPages = Math.ceil(allStudentsData.length / itemsPerPage);
+    let filteredData = allStudentsData;
+    try {
+        const raw = localStorage.getItem('auth_user');
+        if(raw) {
+            const auth = JSON.parse(raw);
+            if(auth && auth.user_type === 'instructor' && auth.department) {
+                filteredData = allStudentsData.filter(s => {
+                    const studentDept = s.DepartMent || s.department || s.Department || '';
+                    return studentDept.toLowerCase() === auth.department.toLowerCase();
+                });
+            }
+        }
+    } catch(e) {}
+    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
     const container = document.getElementById('paginationContainer');
     if (!container) return;
     if (totalPages <= 1) { container.innerHTML = ''; return; }
@@ -132,7 +176,20 @@ function updatePagination() {
 function renderTabs(){
     const tabsEl = document.getElementById('tabsWrapper');
     if(!tabsEl) return;
-    const totalTabs = Math.max(1, Math.ceil(allStudentsData.length / itemsPerPage));
+    let filteredData = allStudentsData;
+    try {
+        const raw = localStorage.getItem('auth_user');
+        if(raw) {
+            const auth = JSON.parse(raw);
+            if(auth && auth.user_type === 'instructor' && auth.department) {
+                filteredData = allStudentsData.filter(s => {
+                    const studentDept = s.DepartMent || s.department || s.Department || '';
+                    return studentDept.toLowerCase() === auth.department.toLowerCase();
+                });
+            }
+        }
+    } catch(e) {}
+    const totalTabs = Math.max(1, Math.ceil(filteredData.length / itemsPerPage));
     const blockSize = 10;
     const currentBlock = Math.floor((currentPage - 1) / blockSize);
     const start = currentBlock * blockSize + 1;
@@ -224,13 +281,14 @@ function deleteStudentRecord(id) {
 }
 function exportToExcel() {
     try {
-        if (!allStudentsData || allStudentsData.length === 0) {
+        const dataToExport = filteredStudentsData.length > 0 ? filteredStudentsData : allStudentsData;
+        if (!dataToExport || dataToExport.length === 0) {
             alert('لا توجد بيانات طلاب لتصديرها');
             return;
         }
         const headers = ['التسلسل', 'الاسم', 'القسم', 'المرحلة', 'الهاتف', 'العمر', 'تاريخ الإضافة', 'الوجه'];
         const rows = [];
-        allStudentsData.forEach((student, index) => {
+        dataToExport.forEach((student, index) => {
             const name = student.full_name || student.StudentName || '-';
             const dept = student.department || student.DepartMent || '-';
             const stage = student.stage || student.StudentStage || '-';
@@ -266,7 +324,8 @@ function exportToPDF() {
         }catch(e){alert('تعذر تهيئة تصدير PDF'); }
     }
     try {
-        if (!allStudentsData || allStudentsData.length === 0) {
+        const dataToExport = filteredStudentsData.length > 0 ? filteredStudentsData : allStudentsData;
+        if (!dataToExport || dataToExport.length === 0) {
             alert('لا توجد بيانات طلاب لتصديرها');
             return;
         }
@@ -284,7 +343,7 @@ function exportToPDF() {
                 doc.text(`التاريخ: ${now}`, 105, 22, { align: 'center' });
                 const headers = ['التسلسل', 'الاسم', 'القسم', 'المرحلة', 'الهاتف', 'العمر', 'تاريخ الإضافة'];
                 const rows = [];
-                allStudentsData.forEach((student, index) => {
+                dataToExport.forEach((student, index) => {
                     const name = student.full_name || student.StudentName || '-';
                     const dept = student.department || student.DepartMent || '-';
                     const stage = student.stage || student.StudentStage || '-';
@@ -309,7 +368,8 @@ function exportToPDF() {
 }
 function printStudents() {
     try {
-        if (!allStudentsData || allStudentsData.length === 0) {
+        const dataToExport = filteredStudentsData.length > 0 ? filteredStudentsData : allStudentsData;
+        if (!dataToExport || dataToExport.length === 0) {
             alert('لا توجد بيانات طلاب للطباعة');
             return;
         }
@@ -328,10 +388,10 @@ function printStudents() {
         doc.setTextColor(100, 100, 100);
         const now = new Date().toLocaleString('ar-EG');
         doc.text(`تاريخ التقرير: ${now}`, 20, 32);
-        doc.text(`إجمالي الطلاب: ${allStudentsData.length}`, 20, 38);
+        doc.text(`إجمالي الطلاب: ${dataToExport.length}`, 20, 38);
         const headers = ['التسلسل', 'الاسم الثلاثي', 'القسم', 'المرحلة', 'رقم الهاتف', 'العمر', 'تاريخ التسجيل'];
         const rows = [];
-        allStudentsData.forEach((student, index) => {
+        dataToExport.forEach((student, index) => {
             const name = student.full_name || student.StudentName || '-';
             const dept = student.department || student.DepartMent || '-';
             const stage = student.stage || student.StudentStage || '-';

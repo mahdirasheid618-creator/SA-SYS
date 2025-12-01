@@ -13,7 +13,7 @@
     <div class="card-body">
         <div class="toolbar" style="justify-content:space-between; margin-bottom:16px;">
             <div>
-                <a href="{{ url_for('add_supervisor') }}" class="btn btn-primary btn-small btn-add"><i class="fas fa-plus"></i> إضافة مشرف</a>
+                <a href="{{ url_for('add_supervisor') }}" class="btn btn-primary btn-small btn-add" id="addSupervisorBtn"><i class="fas fa-plus"></i> إضافة مشرف</a>
                 <button class="btn btn-secondary btn-small" onclick="refreshSupervisors()"><i class="fas fa-sync"></i> تحديث</button>
             </div>
             <div class="search-box">
@@ -96,7 +96,14 @@
         const start = (page-1)*supPerPage; const end = start + supPerPage;
         const body = document.getElementById('supervisorsTableBody');
         const pageData = allSupervisors.slice(start,end);
-                if (!pageData.length) { body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;">لا توجد بيانات</td></tr>'; return; }
+        
+        // إخفاء زر الإضافة للمشرف
+        try {
+            const addBtn = document.getElementById('addSupervisorBtn');
+            if(addBtn) addBtn.style.display = 'none';
+        } catch(e) {}
+        
+        if (!pageData.length) { body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;">لا توجد بيانات</td></tr>'; return; }
         body.innerHTML = pageData.map((u,i)=>{
             const added = u.AddedDate && u.AddedDate.toDate ? new Date(u.AddedDate.toDate()).toLocaleString('ar-EG') : (u.AddedDate || '-');
             const roles = u.Roles || u.roles || '-';
@@ -113,8 +120,7 @@
                     <td>${added}</td>
                     <td>
                         <div class="table-actions">
-                            <button class="btn btn-secondary btn-small" onclick="editSupervisor('${u.id}')"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-danger btn-small" onclick="deleteSupervisor('${u.id}')"><i class="fas fa-trash"></i></button>
+                            <span style="color: #999;">لا توجد إجراءات</span>
                         </div>
                     </td>
                 </tr>

@@ -8,13 +8,13 @@
 </div>
 <div class="toolbar">
     <div class="toolbar-section">
-        <button class="btn btn-primary btn-small" onclick="addAttendance()">
+        <button class="btn btn-primary btn-small" id="addAttendanceBtn" onclick="addAttendance()">
             <i class="fas fa-plus"></i> إضافة
         </button>
-        <button class="btn btn-secondary btn-small" onclick="editAttendance()">
+        <button class="btn btn-secondary btn-small" id="editAttendanceBtn" onclick="editAttendance()">
             <i class="fas fa-edit"></i> تعديل
         </button>
-        <button class="btn btn-danger btn-small" onclick="deleteAttendance()">
+        <button class="btn btn-danger btn-small" id="deleteAttendanceBtn" onclick="deleteAttendance()">
             <i class="fas fa-trash"></i> حذف
         </button>
     </div>
@@ -82,6 +82,24 @@
     let allAttendanceData = [];
     let currentTab = 'today';
     document.addEventListener('DOMContentLoaded', function() {
+        // إخفاء أزرار الإضافة والتعديل والحذف للمشرف
+        try {
+            let isSupervisor = false;
+            try {
+                const auth = JSON.parse(localStorage.getItem('auth_user'));
+                isSupervisor = auth && auth.user_type === 'supervisor';
+            } catch(e) {}
+            
+            if(isSupervisor) {
+                const addBtn = document.getElementById('addAttendanceBtn');
+                const editBtn = document.getElementById('editAttendanceBtn');
+                const deleteBtn = document.getElementById('deleteAttendanceBtn');
+                if(addBtn) addBtn.style.display = 'none';
+                if(editBtn) editBtn.style.display = 'none';
+                if(deleteBtn) deleteBtn.style.display = 'none';
+            }
+        } catch(e) {}
+        
         loadAttendance();
     });
     function loadAttendance() {
@@ -170,6 +188,14 @@
             tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 40px;">لا توجد بيانات حضور</td></tr>';
             return;
         }
+        
+        // Check if user is supervisor
+        let isSupervisor = false;
+        try {
+            const auth = JSON.parse(localStorage.getItem('auth_user'));
+            isSupervisor = auth && auth.user_type === 'supervisor';
+        } catch(e) {}
+        
         tbody.innerHTML = data.map((record, index) => `
             <tr>
                 <td>${index + 1}</td>
@@ -182,12 +208,14 @@
                 <td>${record.duration || '-'}</td>
                 <td>
                     <div class="table-actions">
-                        <button class="btn btn-secondary btn-small" onclick="editRecord('${record.id}')">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-danger btn-small" onclick="deleteRecord('${record.id}')">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        ${isSupervisor ? '<span style="color: #999; font-size: 0.9em;">لا توجد إجراءات</span>' : `
+                            <button class="btn btn-secondary btn-small" onclick="editRecord('${record.id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-danger btn-small" onclick="deleteRecord('${record.id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        `}
                     </div>
                 </td>
             </tr>

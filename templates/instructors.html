@@ -13,7 +13,7 @@
     <div class="card-body">
         <div class="toolbar" style="justify-content:space-between; margin-bottom:16px;">
             <div>
-                <a href="{{ url_for('add_instructor') }}" class="btn btn-primary btn-small btn-add"><i class="fas fa-plus"></i> إضافة أستاذ</a>
+                <a href="{{ url_for('add_instructor') }}" class="btn btn-primary btn-small btn-add" id="addInstructorBtn"><i class="fas fa-plus"></i> إضافة أستاذ</a>
                 <button class="btn btn-secondary btn-small" onclick="refreshInstructors()"><i class="fas fa-sync"></i> تحديث</button>
             </div>
             <div class="search-box">
@@ -97,6 +97,13 @@
             const raw = localStorage.getItem('auth_user');
             if(raw){ const auth = JSON.parse(raw); isSupervisor = auth && auth.user_type === 'supervisor'; permissions = auth && auth.permissions ? auth.permissions : 'full'; }
         }catch(e){}
+        
+        // إخفاء زر الإضافة للمشرف
+        try {
+            const addBtn = document.getElementById('addInstructorBtn');
+            if(addBtn) addBtn.style.display = isSupervisor ? 'none' : '';
+        } catch(e) {}
+        
         if (!pageData.length) {
             body.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;">لا توجد بيانات</td></tr>';
             return;
@@ -104,12 +111,17 @@
         body.innerHTML = pageData.map((i, idx)=>{
             const createdDate = i.created_at && i.created_at.toDate ? new Date(i.created_at.toDate()).toLocaleString('ar-EG') : (i.created_at || '-');
             const photo = i.photo ? '<i class="fas fa-image" style="color:#2ecc71;"></i>' : '-';
-            // Render edit and delete buttons (delete enabled for all users)
-            const actions = `
+            // إخفاء أزرار التعديل والحذف للمشرف
+            let actions = '';
+            if(isSupervisor) {
+                actions = '<div class="table-actions"><span style="color: #999;">لا توجد إجراءات</span></div>';
+            } else {
+                actions = `
                         <div class="table-actions">
                             <button class="btn btn-secondary btn-small" onclick="editInstructor('${i.id}')"><i class="fas fa-edit"></i></button>
                             <button class="btn btn-danger btn-small delete-btn" onclick="deleteInstructor('${i.id}')"><i class="fas fa-trash"></i></button>
                         </div>`;
+            }
             return `
                 <tr>
                     <td>${start+idx+1}</td>

@@ -201,31 +201,31 @@
                     <span>الصفحة الرئيسية</span>
                 </a>
             </li>
-            <li class="no-instructor">
+            <li>
                 <a href="{{ url_for('attendance') }}">
                     <i class="fas fa-clipboard-list"></i>
                     <span>تسجيل الحضور</span>
                 </a>
             </li>
-            <li class="no-instructor">
+            <li>
                 <a href="{{ url_for('students') }}">
                     <i class="fas fa-users"></i>
                     <span>تسجيل الطلاب</span>
                 </a>
             </li>
-            <li>
+            <li class="no-instructor">
                 <a href="{{ url_for('reports') }}">
                     <i class="fas fa-chart-bar"></i>
                     <span>التقارير</span>
                 </a>
             </li>
-            <li>
+            <li class="no-instructor">
                 <a href="{{ url_for('instructors') }}">
                     <i class="fas fa-chalkboard-user"></i>
                     <span>الأساتذة والتدريسيين</span>
                 </a>
             </li>
-            <li>
+            <li class="no-instructor">
                 <a href="{{ url_for('supervisors') }}">
                     <i class="fas fa-user-tie"></i>
                     <span>المشرفين</span>
@@ -255,6 +255,24 @@
         {% block content %}{% endblock %}
     </div>
     {% block extra_js %}{% endblock %}
+    <script>
+        // إخفاء عناصر السايدبار بناءً على دور المستخدم
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                let auth = null;
+                try { auth = JSON.parse(localStorage.getItem('auth_user')); } catch (e) { auth = null; }
+                
+                // تعيين data attribute لكل عنصر no-instructor
+                document.querySelectorAll('.no-instructor').forEach(el => {
+                    if (auth && auth.user_type === 'instructor') {
+                        el.setAttribute('data-hidden-for-instructor', 'true');
+                    } else {
+                        el.removeAttribute('data-hidden-for-instructor');
+                    }
+                });
+            } catch (e) { console.warn('role-based visibility error', e); }
+        });
+    </script>
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
