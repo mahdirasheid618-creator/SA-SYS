@@ -509,6 +509,26 @@
     .login-text { display:none; }
 }
 
+/* Tidy header greeting and avatar on smaller screens to avoid overlap */
+@media (max-width: 768px) {
+    .site-header .greeting { font-size: 13px; font-weight:700; }
+    .greeting { position: relative; top: auto; transform: none; right: auto; margin-inline-end: 8px; gap:6px; }
+    .greeting i { font-size: 14px; }
+    /* make login-box smaller and sit inline so it doesn't overlap greeting */
+    .login-box { position: relative; left: 6px; top: auto; transform: none; width: 220px; height: 48px; padding: 6px 10px; }
+    .header-avatar { width:40px; height:40px; }
+}
+
+@media (max-width: 480px) {
+    .site-header .greeting { font-size: 12px; }
+    .greeting { gap:6px; align-items:center; }
+    .greeting i { font-size: 13px; }
+    .login-box { width: 180px; height:44px; padding:6px 8px; }
+    .header-avatar { width:36px; height:36px; }
+    /* reduce the header-inner padding to free space */
+    .site-header .header-inner { gap:8px; padding-left:8px; }
+}
+
 /* Expanded state: widen the login-box and reveal profile-dropdown inside it */
 .login-box {
     transition: width 300ms ease, padding 220ms ease, transform 220ms ease, box-shadow 300ms ease;

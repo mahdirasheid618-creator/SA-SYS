@@ -16,6 +16,28 @@
             document.documentElement.setAttribute('data-theme', __savedTheme);
         } catch (e) { }
     </script>
+    <script>
+        // Redirect to login if no authenticated user present (prevents manual URL navigation)
+        (function(){
+            try{
+                // allow login page and static assets to load without auth
+                const path = (window && window.location && window.location.pathname) ? window.location.pathname : '/';
+                // if already on login page, do nothing
+                if(path === '/login' || path === '/logout' || path.startsWith('/static') || path === '/offline.html') return;
+
+                // check both localStorage and sessionStorage for persisted auth
+                let authRaw = null;
+                try{ authRaw = localStorage.getItem('auth_user') || sessionStorage.getItem('auth_user'); }catch(e){ authRaw = null; }
+                let auth = null;
+                try{ auth = authRaw ? JSON.parse(authRaw) : null; }catch(e){ auth = null; }
+
+                if(!auth || !auth.user_type){
+                    // not authenticated — redirect to login
+                    try{ window.location.replace('/login'); }catch(e){ window.location.href = '/login'; }
+                }
+            }catch(e){ /* ignore check errors */ }
+        })();
+    </script>
         <script>
         // حفظ وقت أول تسجيل دخول في localStorage
         document.addEventListener('DOMContentLoaded', function() {

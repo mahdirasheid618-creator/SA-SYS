@@ -149,6 +149,43 @@
         min-height: 40px;
     }
 }
+
+/* Mobile - Light (day) theme adjustments:
+   Ensure text/icons are dark and sidebar background contrasts on small screens. */
+@media (max-width: 480px) {
+    :root[data-theme="light"] .sidebar,
+    :root:not([data-theme]) .sidebar {
+        background: #ffffff; /* light background for mobile day mode */
+        box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+        border-left: 1px solid rgba(0,0,0,0.04);
+    }
+    :root[data-theme="light"] .sidebar-logo h1,
+    :root:not([data-theme]) .sidebar-logo h1,
+    :root[data-theme="light"] .sidebar-logo-caption,
+    :root:not([data-theme]) .sidebar-logo-caption {
+        color: #111111;
+    }
+    :root[data-theme="light"] .sidebar-menu a,
+    :root:not([data-theme]) .sidebar-menu a {
+        color: #111111 !important;
+    }
+    :root[data-theme="light"] .sidebar-menu a i,
+    :root:not([data-theme]) .sidebar-menu a i {
+        color: #111111;
+    }
+    :root[data-theme="light"] .sidebar-menu a:hover,
+    :root:not([data-theme]) .sidebar-menu a:hover,
+    :root[data-theme="light"] .sidebar-menu a.active,
+    :root:not([data-theme]) .sidebar-menu a.active {
+        background-color: rgba(0,0,0,0.06);
+        color: #111111 !important;
+    }
+    /* Make scrollbar slightly darker for visibility on light bg */
+    @media (max-width: 480px) {
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.22); }
+        .sidebar { scrollbar-color: rgba(0,0,0,0.22) transparent; }
+    }
+}
 :root[data-theme="dark"] .sidebar {
     background: linear-gradient(135deg, rgba(10,18,36,0.95) 0%, rgba(20,34,59,0.95) 45%, rgba(34,20,48,0.95) 100%);
     box-shadow: -2px 0 20px rgba(2,6,23,0.6);
